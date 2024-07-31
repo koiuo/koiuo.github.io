@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>synology ds214 on 127.0.0.1</title><link>https://127001.me/tags/synology-ds214/</link><description>Recent content in synology ds214 on 127.0.0.1</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>Dmytro Kostiuchenko</copyright><lastBuildDate>Tue, 16 Aug 2016 21:00:00 +0100</lastBuildDate><atom:link href="https://127001.me/tags/synology-ds214/index.xml" rel="self" type="application/rss+xml"/><item><title>Turning Synology NAS into a geeky media server: PulseAudio</title><link>https://127001.me/post/synology/mediaserver-p2/</link><pubDate>Tue, 16 Aug 2016 21:00:00 +0100</pubDate><guid>https://127001.me/post/synology/mediaserver-p2/</guid><description>&lt;section class="admonition-block warning" role="doc-notice">&lt;h6 class="block-title label-only">&lt;span class="title-label">Warning: &lt;/span>&lt;/h6>&lt;p>This post was written in pre-docker era. Back in the time it was necessary to perform many things that are
+no longer required on modern devices (like installing Debian Chroot package which, expectedly, is no longer offered).&lt;/p>
+&lt;p>Modern devices with Docker support or equivalent features (FWIW, my choice is Linux Station from QNAP) are much more
+friendly towards linux enthusiasts&lt;/p>&lt;/section>
+&lt;aside class="admonition-block note" role="note">&lt;h6 class="block-title label-only">&lt;span class="title-label">Note: &lt;/span>&lt;/h6>&lt;p>Required files can be downloaded from &lt;a class="bare" href="https://github.com/edio/synology-mediaserver">https://github.com/edio/synology-mediaserver&lt;/a>&lt;/p>&lt;/aside>
+&lt;p>&lt;a href="https://127001.me/post/synology/mediaserver-p1">Previously&lt;/a> we’ve covered ALSA setup and Debian chroot.&lt;/p>
+&lt;p>In this post I’ll describe how to set up PulseAudio in Debian chroot, so that it’s possible to stream any sound from
+linux-powered pc to a sound card connected to Synology NAS.&lt;/p></description></item><item><title>Turning Synology NAS into a geeky media server</title><link>https://127001.me/post/synology/mediaserver-p1/</link><pubDate>Wed, 06 Jan 2016 01:51:40 +0100</pubDate><guid>https://127001.me/post/synology/mediaserver-p1/</guid><description>&lt;section class="admonition-block warning" role="doc-notice">&lt;h6 class="block-title label-only">&lt;span class="title-label">Warning: &lt;/span>&lt;/h6>&lt;p>This post was written in pre-docker era. Back in the time it was necessary to perform many things that are
+no longer required on modern devices (like installing Debian Chroot package which, expectedly, is no longer offered).&lt;/p>
+&lt;p>Modern devices with Docker support or equivalent features (FWIW, my choice is Linux Station from QNAP) are much more
+friendly towards linux enthusiasts&lt;/p>&lt;/section>
+&lt;aside class="admonition-block note" role="note">&lt;h6 class="block-title label-only">&lt;span class="title-label">Note: &lt;/span>&lt;/h6>&lt;p>Required files can be downloaded from &lt;a class="bare" href="https://github.com/edio/synology-mediaserver">https://github.com/edio/synology-mediaserver&lt;/a>&lt;/p>&lt;/aside>
+&lt;p>I’m not a huge fan of Synology. I bought my DS214 by friend’s recommendation and became frustrated with it right after
+the purchase. Bundled software was limited and buggy. Many people find Synology products great. But for me it just
+didn’t work well because it forced its use cases on me instead of being a helpful tool for my own very specific use
+cases.&lt;/p>
+&lt;p>Anyway, I wasn’t willing to lose money on reselling my NAS, so I decided to get as much as possible from it and
+currently with my DS214Play I can:&lt;/p>
+&lt;div class="olist arabic">&lt;ol class="arabic">&lt;li>Play virtually any sound via connected USB sound card.&lt;/li>&lt;li>Particularly, I can play my huge collection of high-resolution music in various formats (with replaygain tags
+respected). All that thanks to &lt;em>mpd&lt;/em>, which I can control from any decent phone, web-browser or even smart-watch and
+scrobble all statistics to Last.fm.&lt;/li>&lt;li>Stream sound from my laptop via &lt;strong>PulseAudio&lt;/strong>, while watching videos on YouTube or movies.&lt;/li>&lt;/ol>&lt;/div></description></item></channel></rss>
