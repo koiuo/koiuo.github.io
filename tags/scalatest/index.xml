@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>scalatest on 127.0.0.1</title><link>https://127001.me/tags/scalatest/</link><description>Recent content in scalatest on 127.0.0.1</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>Dmytro Kostiuchenko</copyright><lastBuildDate>Mon, 08 Jul 2019 11:00:00 -0400</lastBuildDate><atom:link href="https://127001.me/tags/scalatest/index.xml" rel="self" type="application/rss+xml"/><item><title>Filtering ScalaTest tests by tags in sbt</title><link>https://127001.me/post/filter-scalatests-by-tags-in-sbt/</link><pubDate>Mon, 08 Jul 2019 11:00:00 -0400</pubDate><guid>https://127001.me/post/filter-scalatests-by-tags-in-sbt/</guid><description>&lt;p>&lt;em>ScalaTest&lt;/em> lets you tagging your tests with arbitrary tags and then filtering
+by tags when executing tests.&lt;/p>
+&lt;p>It’s not immediately obvious though, how to make use of this in &lt;em>sbt&lt;/em>, at least
+I couldn’t find an answer on the very first page in Google or StackOverflow,
+and I remember myself looking for a complete solution for quite a while, so
+here it is.&lt;/p></description></item></channel></rss>

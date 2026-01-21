@@ -1,0 +1,241 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+Turning Synology NAS into a geeky media server: PulseAudio | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/synology/mediaserver-p2/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/linux>#linux</a>&nbsp;
+<a href=/tags/pulseaudio>#pulseaudio</a>&nbsp;
+<a href=/tags/synology-ds214>#synology ds214</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>Aug 16, 2016</div>
+</div>
+<h1><a href=https://127001.me/post/synology/mediaserver-p2/>Turning Synology NAS into a geeky media server: PulseAudio</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+6 minutes read
+</div>
+</div>
+</header>
+<article>
+<section class="admonition-block warning" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Warning: </span></h6><p>This post was written in pre-docker era. Back in the time it was necessary to perform many things that are
+no longer required on modern devices (like installing Debian Chroot package which, expectedly, is no longer offered).</p>
+<p>Modern devices with Docker support or equivalent features (FWIW, my choice is Linux Station from QNAP) are much more
+friendly towards linux enthusiasts</p></section>
+<aside class="admonition-block note" role=note><h6 class="block-title label-only"><span class=title-label>Note: </span></h6><p>Required files can be downloaded from <a class=bare href=https://github.com/edio/synology-mediaserver>https://github.com/edio/synology-mediaserver</a></p></aside>
+<p><a href=/post/synology/mediaserver-p1>Previously</a> we’ve covered ALSA setup and Debian chroot.</p>
+<p>In this post I’ll describe how to set up PulseAudio in Debian chroot, so that it’s possible to stream any sound from
+linux-powered pc to a sound card connected to Synology NAS.</p>
+<section class="doc-section level-1"><h2 id=cut><a class=link href=#cut>Installing PulseAudio</a></h2><p>Although Synology already uses PulseAudio for sound playback in Synology AudioStation, an old version of PulseAudio is
+used for that purpose (2.1 as per DSM5.1). Debian chroot, on the other hand, provides PulseAudio 5.0.</p>
+<p>Install PulseAudio and some dependencies and add <code>pulse</code> user to <code>audio</code> group</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(chroot)# apt-get install pulseaudio pulseaudio-module-zeroconf dbus
+(chroot)# gpasswd -a pulse audio</code></pre></div>
+<section class="doc-section level-2"><h3 id=_pulseaudio_theory><a class=link href=#_pulseaudio_theory>PulseAudio theory</a></h3><section class="doc-section level-3"><h4 id=_modes_of_operation><a class=link href=#_modes_of_operation>Modes of operation</a></h4><p>PulseAudio can operate in 2 modes: system mode and per-user mode.</p>
+<p>Configuration file for per-user mode is <code>/etc/pulse/default.pa</code>. If PulseAudio works in system mode, it reads from
+<code>/etc/pulse/system.pa</code>.</p>
+<p>Although system mode worked pretty well for me, it is considered unsafe and
+<a href=https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/WhatIsWrongWithSystemWide/>is said</a> to have
+bad performance.</p>
+<p>I’ll describe modifications I made to configuration script. They may be applied to both <code>default.pa</code> and <code>system.pa</code>
+with the same effect.</p></section>
+<section class="doc-section level-3"><h4 id=_working_with_remote_clients><a class=link href=#_working_with_remote_clients>Working with remote clients</a></h4><p>When it comes to playing audio from remote clients, PulseAudio provides 2 options:
+<a href=https://en.wikipedia.org/wiki/Real-time_Transport_Protocol>RTP</a> and native TCP protocol.</p>
+<p>In case of RTP, client broadcasts a signal and capable receivers on network receive it. RTP is extensively used and is
+widely supported by applications, so theoretically not only PulseAudio clients can play, but any RTP sender that
+can send <strong>uncompressed</strong> (RTP provides plenty of options, but PulseAudio doesn’t support all) audio.</p>
+<p>RTP can be easily enabled or disabled with <code>paprefs</code> utility without even changing configuration.</p>
+<p>I noticed 2 downsides of RTP:</p>
+<div class="olist arabic"><ol class=arabic><li>It gives noticeable delay when streaming from PC. Though it may be compensated manually in <code>pavucontrol</code> utility.</li><li>PulseAudio server died frequently for me when acted as RTP receiver.</li></ol></div>
+<p>Native TCP, on the other hand, is for PulseAudio clients only. It is as if PulseAudio client had been talking to a local
+PulseAudio server, only it is not local. Thus, no extensive support, no 3-rd party apps playing…​</p>
+<p>Also there’s 1 thing to keep in mind: native TCP is extremely sensitive to time synchronisation. Client and server must
+be almost perfectly in sync. To the extent, that even having different NTP servers on the client and server breaks
+playback completely.</p>
+<p>As a benefit you’ll get perfectly synced audio and video when playing movies or youtube videos on your PC.</p>
+<p>Also PulseAudio seems to support it much better and works without crashes for me.</p></section></section>
+<section class="doc-section level-2"><h3 id=_pulseaudio_server_configuration><a class=link href=#_pulseaudio_server_configuration>PulseAudio server configuration</a></h3><div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(chroot)# vi /etc/pulse/default.pa</code></pre></div>
+<div class="olist arabic"><ol class=arabic><li>Devices auto-detection via udev never worked for me, no matter, how I tried, so I loaded audio drivers statically:
+<code>`
+load-module module-alsa-card device_id=0
+</code>`
+and removed auto-detection completely by removing <code>module-udev-detect</code> and <code>module-detect</code></li><li>Anyone on group <code>audio</code> should be able to use PulseAudio
+<code>`
+load-module module-native-protocol-unix auth-group=audio
+</code>`</li><li>Anyone on local network (192.168.0.1 through 192.168.0.255 in my case) should be able to use PulseAudio
+<code>`
+load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1;192.168.0.0/24;
+</code>`</li><li>PulseAudio should be discoverable via zeroconf, so clients are not required to specify static IP
+<code>`
+load-module module-zeroconf-publish
+</code>`</li></ol></div>
+<p>That’s it. Also I cleaned up some modules I do not need, for example the one that corks audio, when phone stream is
+active, the one that displays information about playing application or pans notification sound depending on widget
+position on the screen (whoa, PulseAudio is a beast, really), bluetooth, etc..</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>### Automatically restore the volume of streams and devices
+load-module module-device-restore
+load-module module-stream-restore
+load-module module-card-restore
+
+### Should be after module-*-restore but before module-*-detect
+load-module module-switch-on-port-available
+
+### Load audio drivers statically
+load-module module-alsa-card device_id=0
+
+### Allow access for everyone in audio group
+load-module module-native-protocol-unix auth-group=audio
+
+### Allow access for everyone on local network
+load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1;192.168.0.0/24;
+load-module module-zeroconf-publish
+
+### Load the RTP receiver module (can be configured via paprefs)
+#load-module module-rtp-recv
+
+### Load the RTP sender module (can be configured via paprefs)
+#load-module module-null-sink sink_name=rtp format=s16be channels=2 rate=44100 sink_properties=&#34;device.description=&#39;RTP Multicast Sink&#39;&#34;
+#load-module module-rtp-send source=rtp.monitor
+
+load-module module-default-device-restore
+load-module module-rescue-streams
+load-module module-always-sink
+load-module module-intended-roles
+load-module module-suspend-on-idle</code></pre></div>
+<p>If you do not need network streaming, remove <code>module-zeroconf-publish</code>. It might be a good idea to keep
+<code>module-native-protocol-tcp</code> though, as it’ll let you to connect to PulseAudio from remote PC with <code>pavucontrol</code> and
+<code>paprefs</code>:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(pc)$ PULSE_SERVER=&lt;nas ip&gt; pavucontrol
+(pc)$ PULSE_SERVER=&lt;nas ip&gt; paprefs</code></pre></div>
+<section class="doc-section level-3"><h4 id=_clients_on_the_nas><a class=link href=#_clients_on_the_nas>Clients on the NAS</a></h4><div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(chroot)# vi /etc/pulse/client.pa</code></pre></div>
+<p>We need all local applications to try to connect to local PulseAudio server only. Also I turned <code>auto-spawn</code> off as I
+intend to start PulseAudio manually from <code>pulse</code> user</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>default-server = 127.0.0.1
+autospawn = yes</code></pre></div></section>
+<section class="doc-section level-3"><h4 id=_giving_it_a_spin><a class=link href=#_giving_it_a_spin>Giving it a spin</a></h4><p>Start all the systems PulseAudio depends on</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(chroot)# service start dbus
+(chroot)# service start avahi-daemon
+(chroot)# su pulse -s /bin/bash -c &#39;pulseaudio -D&#39;</code></pre></div>
+<p>If it doesn’t start, try examining its output</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(chroot)# su pulse -s /bin/bash
+(chroot)$ pulseaudio</code></pre></div>
+<p>Else, if it starts successfully, try playing some sound through it</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(chroot)# aplay -D pulse /media/path/to/some.wav</code></pre></div>
+<p>Volume can be adjusted with alsamixer</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(chroot)# alsamixer</code></pre></div></section></section>
+<section class="doc-section level-2"><h3 id=_configure_ntp><a class=link href=#_configure_ntp>Configure NTP</a></h3><p>As I mentioned streaming via native TCP protocol won’t work if system clocks on NAS and your PC are our of sync.
+DSM6.0 has ntp installed, and by default it uses Google servers for time synchronization:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(nas)$ ntpq -p
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+*time1.google.co 71.79.79.71      2 u  768 1024  377  126.551    1.670   1.470
++time2.google.co 71.79.79.71      2 u  684 1024  377  135.111    0.921   0.836
++time3.google.co 71.79.79.71      2 u  449 1024  377   31.924    0.433   1.520
++time4.google.co 71.79.79.71      2 u  561 1024  377  292.364    5.348   4.849</code></pre></div>
+<p>I just added the same servers to <code>/etc/ntp.conf</code> on my pc and never had a problem with playback again:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(pc)# cat /etc/ntp.conf | grep server
+server time1.google.com minpoll 6 maxpoll 10 iburst prefer
+server time2.google.com minpoll 6 maxpoll 10 iburst prefer
+server time3.google.com minpoll 6 maxpoll 10 iburst prefer
+server time4.google.com minpoll 6 maxpoll 10 iburst prefer</code></pre></div></section>
+<section class="doc-section level-2"><h3 id=_pulseaudio_client_configuration><a class=link href=#_pulseaudio_client_configuration>PulseAudio client configuration</a></h3><p>Just load <code>module-zeroconf-discover</code> in your <code>/etc/pulse/default.pa</code>:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(pc)# vi /etc/pulse/default.pa</code></pre></div>
+<p>Uncomment or add line and restart PulseAudio</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>load-module module-zeroconf-discover</code></pre></div>
+<p>After PulseAudio restart new tunnel sink should become available in PulseAudio</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(pc)$ pacmd list-sinks
+  ...
+    index: 2
+        name: &lt;tunnel.sigma.local.alsa_output.0.analog-stereo&gt;
+        driver: &lt;module-tunnel.c&gt;
+        flags: NETWORK HW_MUTE_CTRL HW_VOLUME_CTRL LATENCY
+        state: IDLE
+        suspend cause:
+        priority: 0
+        volume: front-left: 42185 /  64%,   front-right: 42185 /  64%
+                balance 0.00
+        base volume: 65536 / 100%
+        volume steps: 65537
+        muted: no
+        current latency: 312.65 ms
+        max request: 0 KiB
+        max rewind: 0 KiB
+        monitor source: 3
+        sample spec: s16le 2ch 44100Hz
+        channel map: front-left,front-right
+                     Stereo
+        used by: 0
+        linked by: 2
+        fixed latency: 250.00 ms
+        module: 24
+        properties:
+                device.description = &#34;Audinst HUD-mini Analog Stereo on pulse@sigma&#34;
+                tunnel.remote.server = &#34;[2a02:a310:20:5f80:211:32ff:fe3d:74f5]:4713&#34;
+                tunnel.remote.sink = &#34;alsa_output.0.analog-stereo&#34;
+                device.icon_name = &#34;audio-card&#34;
+                tunnel.remote_version = &#34;29&#34;
+                tunnel.remote.user = &#34;pulse&#34;
+                tunnel.remote.fqdn = &#34;sigma&#34;
+                tunnel.remote.description = &#34;Audinst HUD-mini Analog Stereo&#34;
+  ...</code></pre></div>
+<p>This is how it looks in <em>PulseAudio Volume Control</em> utility</p>
+<div class=image-block><img src=/post/synology/screenshot1.png alt=pavucontrol></div></section>
+<section class="doc-section level-2"><h3 id=_starting_pulseaudio_on_nas_automatically><a class=link href=#_starting_pulseaudio_on_nas_automatically>Starting PulseAudio on NAS automatically</a></h3><p>We need to create startup scripts to run <code>dbus</code>, <code>avahi-daemon</code> and <code>pulseaudio</code> itself. The approach was described in
+the <a href=/post/synology/mediaserver-p1>previous part</a>.</p>
+<p>Just refer to the <a href=https://github.com/edio/synology-mediaserver/tree/master/nas/usr/local/etc/rc.d>git repo</a> for
+details.</p></section></section>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>

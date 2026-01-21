@@ -1,0 +1,233 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+How do you change browser in Slack anyway? | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/change-browser-in-slack/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/desktop>#desktop</a>&nbsp;
+<a href=/tags/linux>#linux</a>&nbsp;
+<a href=/tags/mime>#mime</a>&nbsp;
+<a href=/tags/xdg>#xdg</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>Jul 31, 2024</div>
+</div>
+<h1><a href=https://127001.me/post/change-browser-in-slack/>How do you change browser in Slack anyway?</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+9 minutes read
+</div>
+</div>
+<img class=banner src=https://127001.me/post/change-browser-in-slack/banner.png>
+</header>
+<article>
+<p>Overriding the default browser in Slack is my vexatious personal itch. I have a dedicated browser just for work, and I use Slack solely for work. Any link from Slack, be it a GitHub pull request, an unlisted corporate video on YouTube, or an internal meme, I want to open it in my work-only browser. Everything else I want to open in my default browser. <em>And if I get this to work, I’ll be awesome</em>.</p>
+<p>Of course, you may argue: but hey, why would you mix your work and personal environments? That’s not healthy! Get yourself a different laptop.</p>
+<p>Wow, dear, wow! What discipline and work ethics you have. <em>Let’s go. In and out, twenty-minute adventure</em>.</p>
+<div class=image-block><img src="/post/change-browser-in-slack/
+img/rick_morty_in_out.jpg" alt="rick morty in out"></div>
+<small style=color:grey>Rick & Morty. Season 3, Episode 6. TM & © Adult Swim</small>
+<p id=cut> </p>
+<nav id=toc class=toc role=doc-toc><h2 id=toc-title>Table of Contents</h2><ol class="toc-list level-1"><li><a href=#_superficial_intro_to_xdg_open>Superficial intro to <code>xdg-open</code></a><ol class="toc-list level-2"><li><a href=#_cant_we_just_set_browser>Can’t we just set <code>$BROWSER</code>?</a></li><li><a href=#_xdg_mime_applications_specification>XDG MIME Applications specification</a></li></ol></li><li><a href=#_meet_xdg_override>Meet <em>xdg-override</em> <i class="fa fa-github"></i></a><ol class="toc-list level-2"><li><a href=#_xdg_override_script><code>xdg-override</code> script</a></li><li><a href=#_declarative_nix_goodness>Declarative Nix goodness</a></li></ol></li><li><a href=#_closing_thoughts>Closing thoughts</a></li></ol></nav>
+<section class="doc-section level-1"><h2 id=_superficial_intro_to_xdg_open><a class=link href=#_superficial_intro_to_xdg_open>Superficial intro to <code>xdg-open</code></a></h2><section class="doc-section level-2"><h3 id=_cant_we_just_set_browser><a class=link href=#_cant_we_just_set_browser>Can’t we just set <code>$BROWSER</code>?</a></h3><p>Among CLI applications, there’s a <em>convention</em> to respect the <code>$EDITOR</code> environment variable: whenever there’s a need to edit something, CLI apps launch the application specified in this environment variable.</p>
+<div class=listing-block><pre>~ ❯ env | grep EDITOR
+EDITOR=nvim</pre></div>
+<p>For example, the <code>visudo</code> and <code>sudoedit</code> applications <a href=https://github.com/sudo-project/sudo/blob/SUDO_1_9_15/plugins/sudoers/editor.c#L237>read <code>$EDITOR</code></a> and <em>directly</em> spawn the binary specified in this variable.</p>
+<p>Similarly, <code>$BROWSER</code> <em>may</em> tell applications which browser to invoke. However, if you launch Slack like this:</p>
+<div class=listing-block><pre>~ ❯ BROWSER=firefox slack
+~ ❯ BROWSER=qutebrowser slack</pre></div>
+<p>you’ll <em>very likely</em> see that it doesn’t change anything.</p></section>
+<section class="doc-section level-2"><h3 id=_xdg_mime_applications_specification><a class=link href=#_xdg_mime_applications_specification>XDG MIME Applications specification</a></h3><p>Let’s make a step back and mull over an idea of specifying all default applications using environment variables. So, you have <code>$EDITOR</code> for your default text editor. What about rich text editors and word processors like LibreOffice? We may have <code>$WORD_PROCESSOR</code> maybe? Graphic editors anyone? <code>$RASTER_GRAPHIC_EDITOR</code> may point to GIMP, and <code>$VECTOR_GRAPHIC_EDITOR</code> — to Inkscape. At this point, it becomes obvious that this approach does not scale. Ok, we could scale this better by defining environment variable per mimetype, for example</p>
+<div class=listing-block><pre>MIME_IMAGE_PNG=&#34;feh&#34;
+MIME_TEXT_HTML=&#34;firefox&#34;</pre></div>
+<p>But another issue with environment variables is that whenever we spawn a new process, it inherits the entire environment from its parent. More specifically, the environment is <em>copied</em> from the parent process to the child process. After that, it is only possible to change the process’s environment from within this process. Any changes to the parent process environment won’t be reflected in any of its running children. Practically, this means that once you launch an application, you won’t be able to change its default browser without restarting the application (or even the entire graphical session, which is almost as bad as rebooting). This, arguably, would be a terrible user experience.</p>
+<p>For a typical desktop we need something more robust and flexible than inherited environment variables. And the folks from <a href=https://freedesktop.org>freedesktop.org</a> gave us just that in a form of <a href=https://specifications.freedesktop.org/mime-apps-spec/mime-apps-spec-latest.html>XDG MIME Applications specification</a> and a set of conventions surrounding it.</p>
+<p>Whenever Slack or any other application needs to open a URL or a file, there’s a <em>convention</em> to call <code>xdg-open</code>, a small utility script from <a href=https://www.freedesktop.org/wiki/Software/xdg-utils/><code>xdg-utils</code></a>. This script inspects the passed URL or a file, picks the right application to handle it, and spawns it on behalf of Slack or any other application.</p>
+<p>For URLs, <code>xdg-open</code> inspects the <em>scheme</em> part of the URL (that part in the beginnig, like <em>http://</em> or <em>magnet://</em>), and for files, it inspects their <em>mimetype</em>. The association between a scheme or mimetype and an application to handle it is stored in <em>mimeapps.list</em> file (which may reside under <code>/etc</code> or inside <code>$XDG_CONFIG_HOME</code>). Perhaps, a small diagram will explain it better:</p>
+<div class=image-block><img src="/post/change-browser-in-slack/
+img/xdg-open_01.png" alt="xdg open 01" width=600></div>
+<p>Hence, to change the browser spawned on behalf of Slack we could</p>
+<div class=ulist><ul><li>change <code>xdg-open</code> configuration, or</li><li>change <code>xdg-open</code> implementation.</li></ul></div>
+<p>We can’t normally<a class=footnote-ref id=_footnoteref_1 href=#_footnote_1 title="View footnote 1" role=doc-noteref>[1]</a> change <em>mimeapps.list</em> just for Slack (the changes will affect all other apps). Neither can we change the value of <code>$XDG_CONFIG_HOME</code>, to point <code>xdg-open</code> to a different config file, because this environment variable will affect Slack itself and any other app spawned on its behalf (remember, environment variables are inherited from the parent process).</p>
+<p>We’d like also not to change <code>xdg-open</code> implementation globally in our system: ideally, the change should only affect Slack, not all other apps. But foremost, diverging from upstream is very unpractical. However, in the spirit of this solution, we can introduce a <em>proxy</em> implementation of <code>xdg-open</code>, which we’ll "inject" into Slack by adding it to <code>PATH</code>.</p>
+<div class=image-block><img src="/post/change-browser-in-slack/
+img/xdg-open_02.png" alt="xdg open 02" width=568></div>
+<p>For example, our proxy can open <code>$BROWSER</code> (if it is set) for all <code>http://</code> and <code>https://</code> URLs, and for everythign else delegate to the original <code>xdg-open</code></p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=bash><span style=color:#998;font-style:italic>#!/usr/bin/env bash</span>
+<span style=color:teal>webhandler</span><span style=color:#000;font-weight:700>=</span><span style=color:#d14>&#34;&#39;&#39;</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>BROWSER</span><span style=color:#000;font-weight:700>:-</span><span style=background-color:#f8f8f8>/usr/bin/xdg-open</span><span style=color:#000;font-weight:700>}</span><span style=color:#d14>&#34;</span>
+<span style=color:#000;font-weight:700>case</span> <span style=color:#d14>&#34;</span><span style=color:teal>$1</span><span style=color:#d14>&#34;</span> <span style=color:#000;font-weight:700>in
+  </span>http:<span style=color:#000;font-weight:700>*</span><span style=background-color:#f8f8f8>|</span>https:<span style=color:#000;font-weight:700>*</span><span style=background-color:#f8f8f8>)</span>
+    <span style=color:teal>$webhandler</span> <span style=color:#d14>&#34;</span><span style=color:teal>$1</span><span style=color:#d14>&#34;</span>
+    <span style=background-color:#f8f8f8>;;</span>
+  <span style=color:#000;font-weight:700>*</span><span style=background-color:#f8f8f8>)</span>
+    /usr/bin/xdg-open <span style=color:#d14>&#34;</span><span style=color:teal>$1</span><span style=color:#d14>&#34;</span>
+    <span style=background-color:#f8f8f8>;;</span>
+<span style=color:#000;font-weight:700>esac</span></code></pre></div>
+<p>We can save this script as <code>~/.local/xdg-open/xdg-open</code>. Then we can execute Slack with our script in <code>$PATH</code> to force it to respect <code>$BROWSER</code></p>
+<div class=listing-block><pre>$ export PATH=&#34;~/.local/xdg-open:$PATH&#34;
+$ BROWSER=&#34;firefox -P work&#34; slack</pre></div>
+<p>And with the power of Nix (I use NixOS btw<a class=footnote-ref id=_footnoteref_2 href=#_footnote_2 title="View footnote 2" role=doc-noteref>[2]</a>) any dirty hack can be turned into a gloried declarative masterpiece:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=nix>  <span style=color:teal>xdgOpenProxy</span> <span style=color:#000;font-weight:700>=</span> <span style=color:teal>pkgs</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>writeShellApplication</span> <span style=background-color:#f8f8f8>{</span> <b class=conum>1</b>
+    <span style=color:teal>name</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;xdg-open&#34;</span><span style=background-color:#f8f8f8>;</span>
+    <span style=color:teal>checkPhase</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;true&#34;</span><span style=background-color:#f8f8f8>;</span> <b class=conum>2</b>
+    <span style=color:teal>text</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#39;&#39;</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>      case &#34;$1&#34; in</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>        http:*|https:*)</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>          firefox -P work &#34;$1&#34; </span><span style=color:#a61717;background-color:#e3d2d2><b class=conum>3</b>
+</span><span style=color:#d14>          ;;</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>        *)</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>          </span><span style=color:#d14>${</span><span style=color:teal>pkgs</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>xdg-utils</span><span style=color:#d14>}</span><span style=color:#d14>/bin/xdg-open &#34;$1&#34;</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>          ;;</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>      esac</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>    &#39;&#39;</span><span style=background-color:#f8f8f8>;</span>
+  <span style=background-color:#f8f8f8>};</span>
+
+  <span style=color:teal>slack</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>let</span> <b class=conum>4</b>
+    <span style=color:teal>pkg</span> <span style=color:#000;font-weight:700>=</span> <span style=color:teal>pkgs</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>slack</span><span style=background-color:#f8f8f8>;</span>
+    <span style=color:teal>pname</span> <span style=color:#000;font-weight:700>=</span> <span style=color:teal>pkg</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>out</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>pname</span><span style=background-color:#f8f8f8>;</span>
+  <span style=color:#000;font-weight:700>in</span>
+  <span style=color:teal>pkgs</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>symlinkJoin</span> <span style=background-color:#f8f8f8>{</span> <b class=conum>5</b>
+    <span style=color:teal>name</span> <span style=color:#000;font-weight:700>=</span> <span style=color:teal>slack-for-work</span><span style=background-color:#f8f8f8>;</span> <b class=conum>6</b>
+    <span style=color:teal>paths</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>[</span> <span style=color:teal>pkg</span> <span style=background-color:#f8f8f8>];</span>
+    <span style=color:teal>buildInputs</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>[</span> <span style=color:teal>pkgs</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>makeWrapper</span> <span style=background-color:#f8f8f8>];</span>
+    <span style=color:teal>postBuild</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#39;&#39;</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>      wrapProgram &#34;$out/bin/</span><span style=color:#d14>${</span><span style=color:teal>pname</span><span style=color:#d14>}</span><span style=color:#d14>&#34; \</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>        --prefix PATH : &#34;</span><span style=color:#d14>${</span><span style=color:teal>xdgOpenProxy</span><span style=color:#d14>}</span><span style=color:#d14>/bin&#34; </span><span style=color:#a61717;background-color:#e3d2d2><b class=conum>7</b>
+</span><span style=color:#d14>      for desktopFile in $out/share/applications/*; do </span><span style=color:#a61717;background-color:#e3d2d2><b class=conum>8</b>
+</span><span style=color:#d14>        cp --remove-destination $(readlink -e &#34;$desktopFile&#34;) &#34;$desktopFile&#34;</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>        sed -i -e &#39;s:</span><span style=color:#d14>${</span><span style=color:teal>pkg</span><span style=color:#d14>}</span><span style=color:#d14>/bin/</span><span style=color:#d14>${</span><span style=color:teal>pname</span><span style=color:#d14>}</span><span style=color:#d14>:</span><span style=color:#d14>${</span><span style=color:teal>pname</span><span style=color:#d14>}</span><span style=color:#d14>:&#39; &#34;$desktopFile&#34;</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>      done</span><span style=color:#a61717;background-color:#e3d2d2>
+</span><span style=color:#d14>    &#39;&#39;</span><span style=background-color:#f8f8f8>;</span>
+  <span style=background-color:#f8f8f8>};</span></code></pre><ol class="callout-list arabic"><li>create our custom <code>xdg-open</code> proxy and store it somewhere in Nix store (instead of our home)</li><li>counter-intuitively, disable shell script checks. <code>true</code> is an app exiting with 0, which signalls that all checks have passed</li><li>since this proxy is only used for Slack, we can hardcode the desired browser right there — Firefox with the profile named "work"</li><li>finally, we define our own Slack package</li><li>symlink everything from the original Slack package to the new one</li><li>the name of the new package can be anything, we don’t care</li><li>wrap <code>bin/slack</code> into a script, that prepends <code>xdgOpenProxy</code> to <code>PATH</code> before delegating to the original binary</li><li>patch all *.desktop files shipped with the application. Otherwise, they may point to the binary from the original Slack package. That’s a Nix thing</li></ol></div>
+<p>That’s our 20-minute adventure. In and out.</p>
+<p>Well, wait…​</p>
+<p><em>Six days later…​</em></p>
+<div class=image-block><img src="/post/change-browser-in-slack/
+img/six_days_later.jpg" alt="six days later"></div>
+<small style=color:grey>Rick & Morty. Season 3, Episode 6. TM & © Adult Swim</small></section></section>
+<section class="doc-section level-1"><h2 id=_meet_xdg_override><a class=link href=#_meet_xdg_override>Meet <em>xdg-override</em> </a><a href=https://github.com/koiuo/xdg-override><i class="fa fa-github"></i></a></h2><p>I don’t know, why I keep doing this to myself, but I decided to "generify" the solution.</p>
+<p>I mean, there’s some rationale: for instance, I realized that I always wanted spotify links to be handled by the Spotify app. But for whatever reason, I decided that adding 4 lines of code to my 20⁠-⁠minute hack was not good enough.</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=bash><span style=color:#000;font-weight:700>case</span> <span style=color:#d14>&#34;</span><span style=color:teal>$1</span><span style=color:#d14>&#34;</span> <span style=color:#000;font-weight:700>in
+  </span>https://open.spotify.com/<span style=color:#000;font-weight:700>*</span><span style=background-color:#f8f8f8>)</span>
+    spotify-play <span style=color:#d14>&#34;</span><span style=color:teal>$1</span><span style=color:#d14>&#34;</span>
+    <span style=background-color:#f8f8f8>;;</span>
+  ...</code></pre></div>
+<aside class="admonition-block tip" role=doc-tip><h6 class=block-title><span class=title-label>Tip: </span>Open Spotify URLs from command line</h6><p>Spotify is supposed to open special <em>spotify</em> URIs.</p>
+<p>For example, executing this on MacOS will open track in Spotify application</p>
+<div class=listing-block><pre>~ ❯ open /Applications/Spotify.app spotify:track:4PTG3Z6ehGkBFwjybzWkR8</pre></div>
+<p>Unfortunately, this feature has been broken for ages on Linux, and the closest workaround we have is Spotify MPRIS DBus interface.</p>
+<p>Anyway, I use a script <code>spotify-open</code> (<a href=https://gist.github.com/koiuo/1c68e108b8d5635c644c816908b9b403>github gist</a>) to translate regular https:// spotify URLs into URIs and send the resulting URI to Spotify over DBus.</p></aside>
+<p>Long story short, I wrote <a href=https://github.com/koiuo/xdg-override><em>xdg-override</em></a>.</p>
+<section class="doc-section level-2"><h3 id=_xdg_override_script><a class=link href=#_xdg_override_script><code>xdg-override</code> script</a></h3><p>The script allows "injecting" <code>xdg-open</code> proxy into an arbitrary application</p>
+<div class=listing-block><pre>~ ❯ xdg-override \
+  --match &#34;^https?://open.spotify.com/&#34; &#34;spotify-open&#34; \
+  --match &#34;^https?://&#34; &#34;firefox -P work&#34; \
+  slack</pre></div>
+<p>It is based on the idea described above, but the script won’t generate proxy implementation. Instead, <code>xdg-override</code> will copy itself to <code>/tmp/xdg-override-$USER/xdg-open</code> and will set a few <code>$XDG_OVERRIDE_*</code> variables and the <code>$PATH</code>:</p>
+<div class=listing-block><pre>XDG_OVERRIDE_MATCH=&#34;^https?://open.spotify.com/|spotify-open|^https?://|firefox -P work&#34;
+XDG_OVERRIDE_DELEGATE=&#34;$(which xdg-open)&#34;
+PATH=&#34;/tmp/xdg-override-$USER:$PATH&#34;</pre></div>
+<p>When <code>xdg-override</code> is invoked from this new location as <code>xdg-open</code>, it’ll operate in a different mode, parsing <code>$XDG_OVERRIDE_MATCH</code> and dispatching the call appropriately. I tested this script briefly, but automated tests are missing, so expect some rough edges and bugs.</p>
+<aside class="admonition-block note" role=note><h6 class=block-title><span class=title-label>Note: </span>Matching order</h6><p>The order of <code>--match</code> expressions matters. The script tries to match the input against provided expressions in the order they are specified, and dispatches the call as soon as the first match is found.</p></aside></section>
+<section class="doc-section level-2"><h3 id=_declarative_nix_goodness><a class=link href=#_declarative_nix_goodness>Declarative Nix goodness</a></h3><p>Of course the script can be installed using the Nix flake, or tried out without installation</p>
+<div class=listing-block><pre>~ ❯ nix run github:koiuo/xdg-override --match &#34;^https?://&#34; &#34;firefox -P work&#34; slack</pre></div>
+<p>Additionally, the flake exposes a few library functions.</p>
+<p>The <code>wrapPackage</code> allows "injecting" custom <code>xdg-open</code> proxy into a specific package:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=nix><span style=color:#998;font-style:italic># wraps a single application and injects custom xdg-open proxy</span>
+<span style=color:teal>slack</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>(</span><span style=color:teal>xdg-override</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>lib</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>wrapPackage</span> <span style=background-color:#f8f8f8>{</span>
+  <span style=color:teal>nameMatch</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>[</span>
+    <span style=background-color:#f8f8f8>{</span> <span style=color:teal>case</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;^https?://open.spotify.com/&#34;</span><span style=background-color:#f8f8f8>;</span> <span style=color:teal>command</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;spotify-open&#34;</span> <span style=background-color:#f8f8f8>}</span>
+    <span style=background-color:#f8f8f8>{</span> <span style=color:teal>case</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;^https?://&#34;</span><span style=background-color:#f8f8f8>;</span> <span style=color:teal>command</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;firefox -P work&#34;</span> <span style=background-color:#f8f8f8>}</span>
+  <span style=background-color:#f8f8f8>];</span>
+<span style=background-color:#f8f8f8>}</span> <span style=color:teal>pkgs</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>slack</span><span style=background-color:#f8f8f8>);</span></code></pre></div>
+<p>The <code>proxyPkg</code> function generates an <code>xdg-open</code> proxy which then can be installed as a normal package:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=nix><span style=color:teal>xdg-open</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>(</span><span style=color:teal>xdg-override</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>lib</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>proxyPkg</span> <span style=background-color:#f8f8f8>{</span>
+  <span style=color:#000;font-weight:700>inherit</span> <span style=color:teal>pkgs</span><span style=background-color:#f8f8f8>;</span>
+  <span style=color:teal>nameMatch</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>[</span>
+    <span style=background-color:#f8f8f8>{</span> <span style=color:teal>case</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;^https?://open.spotify.com&#34;</span><span style=background-color:#f8f8f8>,</span> <span style=color:teal>command</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;spotify-open&#34;</span> <span style=background-color:#f8f8f8>}</span>
+  <span style=background-color:#f8f8f8>];</span>
+<span style=background-color:#f8f8f8>});</span>
+<span style=color:teal>home</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>packages</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>[</span>
+  <span style=color:#000;font-weight:700>...</span>
+  <span style=color:teal>xdg-open</span>
+  <span style=color:#000;font-weight:700>...</span>
+<span style=background-color:#f8f8f8>];</span></code></pre></div>
+<p>You may need to add <code>xdg-open</code> to <code>PATH</code> explicitly, it works on my machine, but I strongly suspect it relies on some implementation detail of home-manager so the proxy package appears in <code>PATH</code> above <em>xdg-utils</em>.</p>
+<p>There’s also <code>overlay</code> function which generates an overlay with "patched" <em>xdg-utils</em> package. Adding this overlay will globally replace <code>xdg-open</code> with a proxy according to the specified configuration.</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=nix><span style=color:teal>nixpkgs</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>overlays</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>[</span>
+  <span style=color:teal>xdg-override</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>lib</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>overlay</span> <span style=background-color:#f8f8f8>{</span>
+    <span style=color:teal>nameMatch</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>[</span>
+      <span style=background-color:#f8f8f8>{</span> <span style=color:teal>case</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;^https?://open.spotify.com/&#34;</span><span style=background-color:#f8f8f8>;</span> <span style=color:teal>command</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#d14>&#34;spotify-open&#34;</span> <span style=background-color:#f8f8f8>}</span>
+    <span style=background-color:#f8f8f8>];</span>
+  <span style=background-color:#f8f8f8>}</span>
+<span style=background-color:#f8f8f8>]</span></code></pre></div>
+<p>However, I discovered that doing so will cause almost entire system rebuild (derivations are immutable, remember?).</p>
+<p>Please try those out and let me know if it’s useful, if you have any ideas/suggestions or need any features.</p></section></section>
+<section class="doc-section level-1"><h2 id=_closing_thoughts><a class=link href=#_closing_thoughts>Closing thoughts</a></h2><p>I didn’t share my experiments where I tried "reconfiguring" <code>xdg-open</code> by privately bind-mounitng a different <em>mimeapps.list</em> in Slack’s mount namespace. It would’ve been a very clever over-engineered solution to a simple problem, with interesting security gotchas, coding in C (or Rust, or Zig)…​ Alas, <code>xdg-open</code> is slightly more complex than I showed on that first diagram, so the mount-namespace-based solution would’ve been both over-engineered and brittle.</p>
+<div class=image-block><img src="/post/change-browser-in-slack/
+img/xdg-open_03.png" alt="xdg open 03" width=496></div>
+<p>Specifically, <code>xdg-open</code> will delegate to an "opener" that is native to the desktop environment it is running in, and each of those may have their own configuration. Under some very specific conditions (unknown desktop environment, no defined handler for <code>http</code> and <code>https</code>), <code>xdg-open</code> will even consider the <code>$BROWSER</code> variable…​</p>
+<p>By the way, does anyone know why every desktop environment has to maintain its own implementation of "opener" along with its own registry of mimetypes and handlers? I have some ideas, but please let me know in the comments.</p>
+<p>Oh, and don’t hesitate to be this guy:</p>
+<div class=image-block><img src="/post/change-browser-in-slack/
+img/slack_browser.jpg" alt="slack browser"></div>
+<small style=color:grey>Original picture from Rick & Morty. TM & © Adult Swim</small>
+<p>or this guy:</p>
+<div class=image-block><img src="/post/change-browser-in-slack/
+img/eBPF.jpg" alt=eBPF></div>
+<small style=color:grey>Original picture from Rick & Morty. Season 1, Episode 3. TM & © Adult Swim</small>
+<p>Cheers! 🏝️🏖</p></section><section class=footnotes aria-label=Footnotes role=doc-endnotes><hr><ol class=footnotes><li class=footnote id=_footnote_1 role=doc-endnote>It is possible to privately bind-mount a different file (see <code class=nowrap>man 1 unshare</code>). But that wouldn’t help us anyway for a different reason <a class=footnote-backref href=#_footnoteref_1 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_2 role=doc-endnote>And before that I used Arch btw <a class=footnote-backref href=#_footnoteref_2 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li></ol></section>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>

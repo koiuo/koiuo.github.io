@@ -1,0 +1,158 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+Eliminate backlight flicker with Intel i915 | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/eliminate-backlight-flicker-with-i915/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/i915>#i915</a>&nbsp;
+<a href=/tags/linux>#linux</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>Jul 26, 2020</div>
+</div>
+<h1><a href=https://127001.me/post/eliminate-backlight-flicker-with-i915/>Eliminate backlight flicker with Intel i915</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+3 minutes read
+</div>
+</div>
+</header>
+<article>
+<aside class="admonition-block note" role=note><h6 class="block-title label-only"><span class=title-label>Note: </span></h6><p>This is a revised version of my post from 2013 previously published at
+<a class=bare href=http://devbraindom.blogspot.com/2013/03/eliminate-led-screen-flicker-with-intel.html>http://devbraindom.blogspot.com/2013/03/eliminate-led-screen-flicker-with-intel.html</a>.</p>
+<p>Although still popular, that post was full of factual mistakes.</p></aside>
+<p>The brightness of LED backlight in TFT displays is sometimes controlled using a technique called PWM or <em>pulse width
+modulation</em>. If implemented incorrectly, particularly if PWM frequency is too low, it can introduce distracting visual
+effects and induce eye strain, headaches, and even dizziness in some
+people<a class=footnote-ref id=_footnoteref_1 href=#_footnote_1 title="View footnote 1" role=doc-noteref>[1]</a>.</p>
+<p>Many older laptops set PWM frequency for their backlight too low. Luckily, in laptops equipped with Intel i915 GPU the
+PWM frequency is often controlled by the GPU and thus can be adjusted by a software.</p>
+<p id=cut>According to the manual<a class=footnote-ref id=_footnoteref_2 href=#_footnote_2 title="View footnote 2" role=doc-noteref>[2]</a>, in i915 (or
+at least, in Sandy Bridge) PWM frequency is controlled by a value of the 4 upper bytes of the register <code>0xC8254</code>; the
+value of these 4 bytes</p>
+<div class=quote-block><blockquote><p>represents the period of the PWM stream in <em>PCH display raw clocks</em> multiplied by 128</p></blockquote></div>
+<p><em>PCH display raw clocks</em> is held in another register, <code>0xC6204</code>, and it is PCH frequency in MHz. So if the value is
+<code>0x7D</code> it means, that PCH frequency is <em>125 MHz</em>.</p>
+<p>Resulting PWM frequency in Hz can be calculated by the formula:</p>
+<section class="admonition-block important" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Important: </span></h6><p>f<sub>pwm</sub> = ( reg<sub><code>0xC6204</code></sub> × 1,000,000 ) / 128 / reg<sub><code>0xC8254[7..4]</code></sub></p></section>
+<p>This means, that to increase PWM frequency of LED backlight we have to decrease the value stored in 4 upper bytes of
+the register <code>0xC8254</code>.</p>
+<p>An application called <code>intel_reg</code> from the
+<em>intel-gpu-tools</em><a class=footnote-ref id=_footnoteref_3 href=#_footnote_3 title="View footnote 3" role=doc-noteref>[3]</a> package lets reading and writing
+i915 registers, and thus the formula can be implemented as a simple shell script (if we ignore some defensive
+boilerplate):</p>
+<section class="admonition-block caution" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Caution: </span></h6><p>Although precautions have been taken, executing this script may cause damage to your system or even hardware</p></section>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=bash><span style=color:#998;font-style:italic>#!/usr/bin/env bash</span>
+
+<span style=color:#000;font-weight:700>function </span>usage<span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#0086b3>cat</span> <span style=color:#000;font-weight:700>&lt;&lt;</span> <span style=color:teal>EOF</span><span style=color:#d14>
+intelpwm FREQ [PCH_RAWCLK_FREQ_REG [BLC_PWM_PCH_CTL2_REG]]
+
+  FREQ                  desired PWM frequency in Hz
+  PCH_RAWCLK_FREQ_REG   PCH raw clock register name or offset
+  BLC_PWM_PCH_CTL2_REG  backlight control register name or offset
+</span><span style=color:teal>EOF
+</span><span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>function </span>reg_check<span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#998;font-style:italic># If the register is a mnemonic name and not an offset, make sure that it is</span>
+  <span style=color:#998;font-style:italic># known to intel_reg utility. Unknown mnemonic likely means, that we are on a</span>
+  <span style=color:#998;font-style:italic># different generation of hardware that may have different registers layout</span>
+  <span style=color:#0086b3>printf</span> <span style=color:#d14>&#34;%d&#34;</span> <span style=color:#d14>&#34;</span><span style=color:teal>$1</span><span style=color:#d14>&#34;</span> 1&gt;/dev/null 2&gt;&amp;1  <span style=color:#000;font-weight:700>||</span> <span style=color:#d14>\</span>
+    intel_reg list | <span style=color:#0086b3>grep</span> <span style=color:#d14>&#34;</span><span style=color:teal>$1</span><span style=color:#d14>&#34;</span> 1&gt;/dev/null 2&gt;&amp;1 <span style=color:#000;font-weight:700>||</span> <span style=color:#d14>\</span>
+      <span style=color:#000;font-weight:700>(&gt;</span>&amp;2 <span style=color:#0086b3>echo</span> <span style=color:#d14>&#34;Register </span><span style=color:teal>$1</span><span style=color:#d14> is not defined on this hardware&#34;</span> <span style=color:#000;font-weight:700>&amp;&amp;</span> <span style=color:#0086b3>false</span><span style=color:#000;font-weight:700>)</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>function </span>reg_read<span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#998;font-style:italic># this assumes fixed position of the value in intel_reg output</span>
+  <span style=color:#998;font-style:italic># so far this has been the case though</span>
+  intel_reg  <span style=color:#0086b3>read</span> <span style=color:#d14>&#34;</span><span style=color:teal>$1</span><span style=color:#d14>&#34;</span> | <span style=color:#0086b3>cut</span> <span style=color:navy>-c51-60</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:teal>FREQ</span><span style=color:#000;font-weight:700>=</span><span style=color:teal>$1</span>
+<span style=color:teal>PCH_RAWCLK_FREQ_REG</span><span style=color:#000;font-weight:700>=</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>2</span><span style=color:#000;font-weight:700>:-</span><span style=color:teal>PCH_RAWCLK_FREQ</span><span style=color:#000;font-weight:700>}</span>
+<span style=color:teal>BLC_PWM_PCH_CTL2_REG</span><span style=color:#000;font-weight:700>=</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>3</span><span style=color:#000;font-weight:700>:-</span><span style=color:teal>BLC_PWM_PCH_CTL2</span><span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>if</span> <span style=color:#000;font-weight:700>[</span> <span style=color:navy>-z</span> <span style=color:#d14>&#34;</span><span style=color:teal>$FREQ</span><span style=color:#d14>&#34;</span> <span style=color:#000;font-weight:700>]</span><span style=background-color:#f8f8f8>;</span> <span style=color:#000;font-weight:700>then
+  </span>usage
+  <span style=color:#0086b3>exit </span>1
+<span style=color:#000;font-weight:700>fi
+
+</span>reg_check <span style=color:#d14>&#34;</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>PCH_RAWCLK_FREQ_REG</span><span style=color:#000;font-weight:700>}</span><span style=color:#d14>&#34;</span> <span style=color:#000;font-weight:700>||</span> <span style=color:#0086b3>exit </span>1
+reg_check <span style=color:#d14>&#34;</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>BLC_PWM_PCH_CTL2_REG</span><span style=color:#000;font-weight:700>}</span><span style=color:#d14>&#34;</span> <span style=color:#000;font-weight:700>||</span> <span style=color:#0086b3>exit </span>1
+
+<span style=color:teal>PCH_FREQ</span><span style=color:#000;font-weight:700>=</span><span style=color:#d14>&#34;</span><span style=color:#d14>$(</span>reg_read <span style=color:#000;font-weight:700>${</span><span style=color:teal>PCH_RAWCLK_FREQ_REG</span><span style=color:#000;font-weight:700>}</span><span style=color:#d14>)</span><span style=color:#d14>&#34;</span> <b class=conum>1</b>
+<span style=color:teal>BLC_CTL2</span><span style=color:#000;font-weight:700>=</span><span style=color:#d14>&#34;</span><span style=color:#d14>$(</span>reg_read <span style=color:#000;font-weight:700>${</span><span style=color:teal>BLC_PWM_PCH_CTL2_REG</span><span style=color:#000;font-weight:700>}</span><span style=color:#d14>)</span><span style=color:#d14>&#34;</span>
+<span style=color:teal>CYCLE</span><span style=color:#000;font-weight:700>=</span><span style=color:#d14>&#34;</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>BLC_CTL2</span>:6:4<span style=color:#000;font-weight:700>}</span><span style=color:#d14>&#34;</span>
+<span style=color:teal>HEX</span><span style=color:#000;font-weight:700>=</span><span style=color:#d14>$(</span><span style=color:#0086b3>printf</span> <span style=color:#d14>&#34;0x%08x&#34;</span> <span style=color:#000;font-weight:700>$((</span><span style=color:#099>1000000</span><span style=color:#000;font-weight:700>*</span>PCH_FREQ/128/FREQ<span style=color:#000;font-weight:700>))</span><span style=color:#d14>)</span>
+<span style=color:teal>PERIOD</span><span style=color:#000;font-weight:700>=</span><span style=color:#d14>&#34;</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>HEX</span>:6:9<span style=color:#000;font-weight:700>}</span><span style=color:#d14>&#34;</span>
+
+<span style=color:#000;font-weight:700>&gt;</span>&amp;2 <span style=color:#0086b3>echo</span> <span style=color:#d14>&#34;Writing 0x</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>PERIOD</span><span style=color:#000;font-weight:700>}${</span><span style=color:teal>CYCLE</span><span style=color:#000;font-weight:700>}</span><span style=color:#d14> to register </span><span style=color:#000;font-weight:700>${</span><span style=color:teal>BLC_PWM_PCH_CTL2_REG</span><span style=color:#000;font-weight:700>}</span><span style=color:#d14>&#34;</span>
+intel_reg write <span style=color:#d14>&#34;</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>BLC_PWM_PCH_CTL2_REG</span><span style=color:#000;font-weight:700>}</span><span style=color:#d14>&#34;</span> <span style=color:#d14>&#34;0x</span><span style=color:#000;font-weight:700>${</span><span style=color:teal>PERIOD</span><span style=color:#000;font-weight:700>}${</span><span style=color:teal>CYCLE</span><span style=color:#000;font-weight:700>}</span><span style=color:#d14>&#34;</span></code></pre><ol class="callout-list arabic"><li>boilerplate ends here, and actual formula implementation starts</li></ol></div>
+<p>And then, to set PWM frequency to some reasonable 800 Hz we would do</p>
+<div class=listing-block><pre># intelpwm 800</pre></div>
+<p>Since the value we wrote to the register is not permanent, we have to write it again every time the power is cycled for
+the GPU or the backlight (screen is turned off, laptop suspended, etc.). This is easy to do with udev:</p>
+<div class=listing-block><pre>KERNEL!=&#34;intel_backlight&#34;, SUBSYSTEM!=&#34;backlight&#34;, ACTION!=&#34;change&#34;, GOTO=&#34;backlight_pwm_rules_end&#34;
+
+RUN=&#34;intelpwm 800&#34;
+
+LABEL=&#34;backlight_pwm_rules_end&#34;</pre></div>
+<p>The script, slightly modified to receive values from a config file, and the corresponding udev rule are published on my
+github as <em>intelpwm-udev</em><a class=footnote-ref id=_footnoteref_4 href=#_footnote_4 title="View footnote 4" role=doc-noteref>[4]</a>.</p><section class=footnotes aria-label=Footnotes role=doc-endnotes><hr><ol class=footnotes><li class=footnote id=_footnote_1 role=doc-endnote><a class=bare href=https://www.tftcentral.co.uk/articles/pulse_width_modulation.htm>https://www.tftcentral.co.uk/articles/pulse_width_modulation.htm</a> <a class=footnote-backref href=#_footnoteref_1 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_2 role=doc-endnote>Intel HD Graphics programmer’s reference manual - <a class=bare href=https://01.org/linuxgraphics/sites/default/files/documentation/snb_ihd_os_vol3_part3.pdf>https://01.org/linuxgraphics/sites/default/files/documentation/snb_ihd_os_vol3_part3.pdf</a> <a class=footnote-backref href=#_footnoteref_2 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_3 role=doc-endnote><a class=bare href=http://cgit.freedesktop.org/xorg/app/intel-gpu-tools/>http://cgit.freedesktop.org/xorg/app/intel-gpu-tools/</a> <a class=footnote-backref href=#_footnoteref_3 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_4 role=doc-endnote><a class=bare href=https://github.com/edio/intelpwm-udev>https://github.com/edio/intelpwm-udev</a> <a class=footnote-backref href=#_footnoteref_4 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li></ol></section>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<div id=disqus_thread></div>
+<script>if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!==-1)document.getElementById('disqus_thread').innerHTML='Disqus comments not available by default when the website is previewed locally.';else{var disqus_config=function(){};(function(){var g=function(){var a=!0;try{a=window.self!==window.top}catch(a){}return a},h,b,c,d,f,a,e;if(g())return;if(h='//127001me.disqus.com/embed.js',b=document,c=b.createElement('script'),c.src=h,c.async=!0,c.setAttribute('data-timestamp',+new Date),d=!1,f=function(){if(d)return;(b.head||b.body).appendChild(c),d=!0},a=b.getElementById('disqus_thread'),c.onerror=function(b){if(sessionStorage.getItem('failure-note'))return;a.innerText='Disqus failed to load',a.style.border='1px dashed',a.style.padding='.5em',a.style.background='lightyellow',sessionStorage.setItem('failure-note',!0)},location.hash.match(/^#comment/))return f();e=function(){if(d)return;var b=a.getBoundingClientRect();b.top<window.innerHeight&&b.bottom>=0&&f()},window.addEventListener('load',e),b.addEventListener('scroll',e)})()}</script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>

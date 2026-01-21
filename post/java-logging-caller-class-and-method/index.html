@@ -1,0 +1,154 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+How Java logging frameworks determine caller class and method name | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/java-logging-caller-class-and-method/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/java>#java</a>&nbsp;
+<a href=/tags/log4j>#log4j</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>Apr 8, 2014</div>
+</div>
+<h1><a href=https://127001.me/post/java-logging-caller-class-and-method/>How Java logging frameworks determine caller class and method name</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+4 minutes read
+</div>
+</div>
+</header>
+<article>
+<p>This post describes how java logging frameworks (<em>log4j</em>, for example) know the exact place in code (class and method name), where the logging statement was invoked.</p>
+<p>I decided to write this post because often I meet developers who do not understant what is the cost of writing caller information to logs, or why the cost is so high.</p>
+<section class="doc-section level-1"><h2 id=cut><a class=link href=#cut>Brief <em>log4j</em> configuration and usage overview</a></h2><p>A logger is identified by its name (a.k.a. category). Common myth here, is that the logger is somehow connected with the class it is declared in. The myth is based on the signature of the factory method:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>private</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#000;font-weight:700>final</span> <span style=color:#458;font-weight:700>Logger</span> <span style=background-color:#f8f8f8>log</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#458;font-weight:700>LogManager</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getLogger</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>MyService</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>class</span><span style=color:#000;font-weight:700>);</span></code></pre></div>
+<p>but that’s just a shortcut for</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#458;font-weight:700>LogManager</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getLogger</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>MyService</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>class</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getName</span><span style=color:#000;font-weight:700>());</span></code></pre></div>
+<section class="doc-section level-2"><h3 id=_category_vs_caller_class_name><a class=link href=#_category_vs_caller_class_name>Category vs Caller class name</a></h3><p>Consider the following example</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>package</span> <span style=color:#555>my.pkg</span><span style=color:#000;font-weight:700>;</span>
+
+<span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>MyService</span> <span style=color:#000;font-weight:700>{</span>
+
+  <span style=color:#000;font-weight:700>private</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#000;font-weight:700>final</span> <span style=color:#458;font-weight:700>Logger</span> <span style=background-color:#f8f8f8>log1</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#458;font-weight:700>LogManager</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getLogger</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>MyService</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>class</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>private</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#000;font-weight:700>final</span> <span style=color:#458;font-weight:700>Logger</span> <span style=background-color:#f8f8f8>log2</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#458;font-weight:700>LogManager</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getLogger</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;a-logger&#34;</span><span style=color:#000;font-weight:700>);</span>
+
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>f</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=background-color:#f8f8f8>log1</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>debug</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;I got MyService.class as parameter&#34;</span><span style=color:#000;font-weight:700>);</span>
+    <span style=background-color:#f8f8f8>log2</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>debug</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;I&#39;m a walrus&#34;</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>If we configure both loggers with the pattern <code>%c - %m%n</code>‎<a class=footnote-ref id=_footnoteref_1 href=#_footnote_1 title="View footnote 1" role=doc-noteref>[1]</a>, the call to <code>f()</code> will result in the following logs</p>
+<div class=listing-block><pre>my.pkg.MyService - I got MyService.class as parameter
+a-logger - I&#39;m a walrus</pre></div>
+<p>But if we use capital <code>%C</code> in the pattern, then the call to <code>f()</code> will yield</p>
+<div class=listing-block><pre>my.pkg.MyService - I got MyService.class as parameter
+my.pkg.MyService - I&#39;m a walrus</pre></div>
+<p>Notice how the second logger figured the caller class name, having no prior knowledge about the <code>MyService</code> class.</p></section></section>
+<section class="doc-section level-1"><h2 id=_jvm_stacktraces><a class=link href=#_jvm_stacktraces>JVM Stacktraces</a></h2><p>Before JVM enters any method, it records the point from which this method is invoked to be able to return to that same point later, after the method returns. Let’s look at simple example</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>Example</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>main</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>String</span><span style=color:#000;font-weight:700>[]</span> <span style=background-color:#f8f8f8>args</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=background-color:#f8f8f8>a</span><span style=color:#000;font-weight:700>();</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>a</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span> <span style=background-color:#f8f8f8>getCallerInfo</span><span style=color:#000;font-weight:700>();</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>getCallerInfo</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span> <span style=background-color:#f8f8f8>b</span><span style=color:#000;font-weight:700>();</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>b</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>throw</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>RuntimeException</span><span style=color:#000;font-weight:700>();</span> <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>Method <code>b()</code> throws an exception. Exception reaches the very top without being caught and its stacktrace gets printed to <code>System.err</code>:</p>
+<div class=listing-block><pre>Exception in thread &#34;main&#34; java.lang.RuntimeException
+ at Example.b(Example.java:7)
+ at Example.getCallerInfo(Example.java:6)
+ at Example.a(Example.java:5)
+ at Example.main(Example.java:4)</pre></div>
+<p>Having that stacktrace it is easy to say, that method <code>getCallerInfo()</code> has been called from method <code>a()</code>. So if we could get that stacktrace in runtime somehow and analyze it, we could find an invocation point for any method in our application.</p>
+<section class="doc-section level-2"><h3 id=_obtaining_stacktrace><a class=link href=#_obtaining_stacktrace>Obtaining stacktrace</a></h3><p>There are few ways to get stacktrace in Java: <a href=http://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#getStackTrace--><code>Thread.getStackTrace</code></a> and <a href=http://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html#getStackTrace--><code>Throwable.getStackTrace()</code></a>. Both methods return array of <a href=http://docs.oracle.com/javase/8/docs/api/java/lang/StackTraceElement.html><code>StackTraceElement</code></a>.</p>
+<section class="doc-section level-3"><h4 id=_throwable_getstacktrace><a class=link href=#_throwable_getstacktrace>Throwable.getStackTrace()</a></h4><p>Usage is as simple as</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>Throwable</span><span style=color:#000;font-weight:700>().</span><span style=color:teal>getStackTrace</span><span style=color:#000;font-weight:700>();</span></code></pre></div>
+<p>Stacktrace gets filled in when <code>Throwable</code> is created, so no need to throw it. Moreover, it is possible to reuse the same <code>Throwable</code> instance calling <a href=http://docs.oracle.com/javase/8/docs/api/java/lang/Throwable.html#fillInStackTrace--><code>fillInStacktrace()</code></a> to refresh stacktrace when needed (of course, keeping in mind possible race conditions if shared across threads).
+Under the hood native method <code>Throwable.fillInStackTrace(int dummy)</code> is invoked eventually.</p></section>
+<section class="doc-section level-3"><h4 id=_thread_getstacktrace><a class=link href=#_thread_getstacktrace>Thread.getStackTrace()</a></h4><p>Usage is</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#458;font-weight:700>Thread</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>currentThread</span><span style=color:#000;font-weight:700>().</span><span style=color:teal>getStackTrace</span><span style=color:#000;font-weight:700>();</span></code></pre></div>
+<p>Although a bit cleaner, this method does not give other benefits and is a bit slower (it has to check, whether stack trace is obtained for current thread of for some other thread, doing necessary security checks if required). And in the end stacktrace is obtained from new <strong>Exception</strong> instance in a way described above.</p></section></section></section>
+<section class="doc-section level-1"><h2 id=_working_example><a class=link href=#_working_example>Working example</a></h2><p>So we learned how to obtain an array of <code>StackTraceElement</code>. We need to iterate through that array and find an elelement belonging to our logger:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#d14>&#34;debug&#34;</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>equals</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>methodName</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>&amp;</span> <span style=color:#d14>&#34;my.pkg.Logger&#34;</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>equals</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>declaringClass</span><span style=color:#000;font-weight:700>)</span></code></pre></div>
+<p>Here is very simple straightforward implementation of a logger, which knows everything about its caller.</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>Logger</span> <span style=color:#000;font-weight:700>{</span>
+
+  <span style=color:#998;font-style:italic>/**
+   * Log message to stderr along with the caller class and method name.
+   * @param msg message to log
+   */</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>final</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>log</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>String</span> <span style=background-color:#f8f8f8>msg</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#458;font-weight:700>StackTraceElement</span><span style=color:#000;font-weight:700>[]</span> <span style=background-color:#f8f8f8>stackTrace</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>Throwable</span><span style=color:#000;font-weight:700>().</span><span style=color:teal>getStackTrace</span><span style=color:#000;font-weight:700>();</span>
+    <span style=color:#998;font-style:italic>// Index of StackTraceElement in stacktrace, where our logger appears.</span>
+    <span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>i</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>getSelfElementIndex</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>stackTrace</span><span style=color:#000;font-weight:700>));</span>
+    <span style=color:#998;font-style:italic>// Caller is the next item down the stack.</span>
+    <span style=color:#458;font-weight:700>StackTraceElement</span> <span style=background-color:#f8f8f8>caller</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>stackTrace</span><span style=color:#000;font-weight:700>[</span><span style=background-color:#f8f8f8>i</span> <span style=color:#000;font-weight:700>+</span> <span style=color:#099>1</span><span style=color:#000;font-weight:700>];</span>
+    <span style=color:#458;font-weight:700>System</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>err</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>println</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>caller</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getClassName</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>+</span> <span style=color:#d14>&#34;.&#34;</span> <span style=color:#000;font-weight:700>+</span> <span style=background-color:#f8f8f8>caller</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getMethodName</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>+</span> <span style=color:#d14>&#34;: &#34;</span>
+       <span style=color:#000;font-weight:700>+</span> <span style=background-color:#f8f8f8>msg</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>}</span>
+
+  <span style=color:#000;font-weight:700>private</span> <span style=color:#458;font-weight:700>int</span> <span style=color:#900;font-weight:700>getSelfElementIndex</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>StackTraceElement</span><span style=color:#000;font-weight:700>[]</span> <span style=background-color:#f8f8f8>stackTrace</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#000;font-weight:700>for</span> <span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>i</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#099>0</span><span style=color:#000;font-weight:700>;</span> <span style=background-color:#f8f8f8>i</span> <span style=color:#000;font-weight:700>&lt;</span> <span style=background-color:#f8f8f8>stackTrace</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>length</span><span style=color:#000;font-weight:700>;</span> <span style=background-color:#f8f8f8>i</span><span style=color:#000;font-weight:700>++)</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=color:#458;font-weight:700>StackTraceElement</span> <span style=background-color:#f8f8f8>el</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>stackTrace</span><span style=color:#000;font-weight:700>[</span><span style=background-color:#f8f8f8>i</span><span style=color:#000;font-weight:700>];</span>
+      <span style=color:#998;font-style:italic>// We don&#39;t need to check method name, our logger has only one method.</span>
+      <span style=color:#000;font-weight:700>if</span> <span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>el</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getClassName</span><span style=color:#000;font-weight:700>().</span><span style=color:teal>equals</span><span style=color:#000;font-weight:700>(</span><span style=color:#000;font-weight:700>this</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getClass</span><span style=color:#000;font-weight:700>().</span><span style=color:teal>getName</span><span style=color:#000;font-weight:700>()))</span> <span style=color:#000;font-weight:700>{</span>
+        <span style=color:#000;font-weight:700>return</span> <span style=background-color:#f8f8f8>i</span><span style=color:#000;font-weight:700>;</span>
+      <span style=color:#000;font-weight:700>}</span>
+    <span style=color:#000;font-weight:700>}</span>
+    <span style=color:#000;font-weight:700>throw</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#900;font-weight:700>IllegalStateException</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;Logger doesn&#39;t appear in stacktrace&#34;</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div></section>
+<section class="doc-section level-1"><h2 id=_so_what_about_log4j><a class=link href=#_so_what_about_log4j>So what about <em>log4j</em>?</a></h2><p>Of course, it’s a bit more complicated than that, but the basic principle remains the same. If you are interested in the specifics, see</p>
+<div class=ulist><ul><li><code>org.apache.log4j.spi.LocationInfo</code></li><li><code>org.apache.log4j.helpers.PatternParser.LocationPatternConverter</code></li></ul></div></section><section class=footnotes aria-label=Footnotes role=doc-endnotes><hr><ol class=footnotes><li class=footnote id=_footnote_1 role=doc-endnote><code>%c</code> (category), <code>%m</code> (message), <code>%n</code> (new line). See <a href=http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html>PatternLayout</a> <a class=footnote-backref href=#_footnoteref_1 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li></ol></section>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+Listen tracks from youtube in mpd | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/youtube-in-mpd/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/mpd>#mpd</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>Sep 13, 2013</div>
+</div>
+<h1><a href=https://127001.me/post/youtube-in-mpd/>Listen tracks from youtube in mpd</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+1 minutes read
+</div>
+</div>
+</header>
+<article>
+<p>We’ll need</p>
+<div class=ulist><ul><li><em>mpd</em> with <em>curl</em> support</li><li><a href=http://rg3.github.io/youtube-dl/>youtube-dl</a></li></ul></div>
+<p id=cut>For example, we may want to listen to some <a href="http://www.youtube.com/watch?v=HS5fHWmzqIg">vocal trance</a> on youtube.</p>
+<p>First we use <em>youtube-dl</em> to determine what formats are available</p>
+<div class=listing-block><pre>$ youtube-dl -F http://www.youtube.com/watch?v=HS5fHWmzqIg
+[youtube] Setting language
+[youtube] HS5fHWmzqIg: Downloading video webpage
+[youtube] HS5fHWmzqIg: Downloading video info webpage
+[youtube] HS5fHWmzqIg: Extracting video information
+Available formats:
+22      :       mp4     [720x1280]
+18      :       mp4     [360x640]
+43      :       webm    [360x640]
+5       :       flv     [240x400]
+36      :       3gp     [240x320]
+17      :       3gp     [144x176]
+136     :       mp4     [720p] (DASH Video)
+135     :       mp4     [480p] (DASH Video)
+134     :       mp4     [360p] (DASH Video)
+133     :       mp4     [240p] (DASH Video)
+160     :       mp4     [192p] (DASH Video)
+141     :       m4a     [256k] (DASH Audio)
+172     :       webm    [256k] (DASH Audio)
+140     :       m4a     [128k] (DASH Audio)
+171     :       webm    [128k] (DASH Audio)
+139     :       m4a     [48k] (DASH Audio)</pre></div>
+<p>There are 5 audio formats for this video, the one with id <code>141</code> has the highest bitrate. All that is left is to get the real URL for this format and feed it to mpd</p>
+<div class=listing-block><pre>$ mpc add `youtube-dl -f141 -g http://www.youtube.com/watch?v=HS5fHWmzqIg`</pre></div>
+<p>That’s all, track from youtube is now in mpd queue. Enjoy!</p>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>

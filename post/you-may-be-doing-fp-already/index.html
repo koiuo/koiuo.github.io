@@ -1,0 +1,366 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+You may be doing FP already | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/you-may-be-doing-fp-already/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/fp>#fp</a>&nbsp;
+<a href=/tags/java>#java</a>&nbsp;
+<a href=/tags/oop>#oop</a>&nbsp;
+<a href=/tags/scala>#scala</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>Feb 10, 2020</div>
+</div>
+<h1><a href=https://127001.me/post/you-may-be-doing-fp-already/>You may be doing FP already</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+12 minutes read
+</div>
+</div>
+</header>
+<article>
+<p>Functional programming (FP) has been a somewhat hot topic in recent years in my surroundings. Although in my <em>close</em>
+surroundings people are usually not zealous or overly excited, I do notice sometimes talks, discussions and vocally
+expressed opinions where <em>tremendous</em> benefits of FP over other paradigms are claimed, through presenting FP as a
+fundamentally new approach to writing code, opposite to, say, OOP. Some go as far as saying, that one must fully ditch
+OOP and all related experience because it’s all just a mistake.</p>
+<p>Such extreme claims are rarely challenged. When a person with an OOP background gets involved in any FP-related
+discussion, it quickly gets overwhelmed with new unfamiliar vocabulary: algebras, monads, semigroups, functors, type
+classes…​ And I start questioning intents of those claims — are they made to make people shift to FP, or to prove, that
+some definition of FP is better than some definition of OOP?</p>
+<p>With this post, I hope to show that FP can be seen as an evolutionary step, a generalization over practices we already
+consider the best in OOP paradigm. And if viewed like this, it can be useful even when adopted gradually. I hope this
+point of view will persuade programmers to look into FP and to borrow new techniques from it to improve non-FP code.</p>
+<section class="doc-section level-1"><h2 id=cut><a class=link href=#cut>FP concepts we already use in OOP</a></h2><p>I want to examine concepts, that are claimed (by some) to be unique to FP but are actually used in non-FP code too.</p>
+<section class="doc-section level-2"><h3 id=_pure_functions><a class=link href=#_pure_functions>Pure functions</a></h3><p>And for starters let’s examine what probably is considered the core concept of FP — pure functions.</p>
+<p>A pure function must satisfy 2 properties:</p>
+<div class=ulist><ul><li>its return value is the same for the same arguments,</li><li>its evaluation has no side effects.</li></ul></div>
+<p>Let’s consider a simple application.</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>TravellingApp</span> <span style=color:#000;font-weight:700>{</span>
+
+  <span style=color:#000;font-weight:700>private</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>errExit</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Throwable</span> <span style=background-color:#f8f8f8>t</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>code</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#458;font-weight:700>System</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>err</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>println</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>t</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getMessage</span><span style=color:#000;font-weight:700>());</span>
+    <span style=color:#458;font-weight:700>System</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>exit</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>code</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>}</span>
+
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>main</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>String</span><span style=color:#000;font-weight:700>[]</span> <span style=background-color:#f8f8f8>args</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#000;font-weight:700>try</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=color:#458;font-weight:700>Cli</span> <span style=background-color:#f8f8f8>cli</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>parseCli</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>args</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>}</span> <span style=color:#000;font-weight:700>catch</span> <span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>CliParsingException</span> <span style=background-color:#f8f8f8>e</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=color:#458;font-weight:700>System</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>out</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>println</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>usageText</span><span style=color:#000;font-weight:700>);</span>
+      <span style=background-color:#f8f8f8>errExit</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>e</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>1</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>}</span>
+
+    <span style=color:#458;font-weight:700>Config</span> <span style=background-color:#f8f8f8>config</span>
+    <span style=color:#000;font-weight:700>try</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=background-color:#f8f8f8>config</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>readConfig</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>cli</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>configPath</span><span style=color:#000;font-weight:700>)</span>
+    <span style=color:#000;font-weight:700>}</span> <span style=color:#000;font-weight:700>catch</span> <span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>IOException</span> <span style=background-color:#f8f8f8>ioe</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=background-color:#f8f8f8>errExit</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>ioe</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>2</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>}</span>
+
+    <span style=color:#000;font-weight:700>try</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=background-color:#f8f8f8>travelAroundTheWorld</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>config</span><span style=color:#000;font-weight:700>)</span>
+    <span style=color:#000;font-weight:700>}</span> <span style=color:#000;font-weight:700>catch</span> <span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>WorldIsFlatException</span> <span style=background-color:#f8f8f8>wife</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=background-color:#f8f8f8>errExit</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>wife</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>3</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>}</span> <span style=color:#000;font-weight:700>catch</span> <span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>TimeoutException</span> <span style=background-color:#f8f8f8>te</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=background-color:#f8f8f8>errExit</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>te</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>4</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>}</span>
+    <span style=color:#000;font-weight:700>...</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>Even if we ignore verbose errors handling this code is horrible because it is hard to test. One could assign custom
+<code>PrintStream</code> to <code>System.err</code> and <code>System.out</code> to verify what program prints, but verifying exit code becomes super hard
+(on top of that, <code>System.exit()</code> will cause the JVM running the tests to exit).</p>
+<p>A simple way around that is moving all the logic from <code>main</code> to some <code>run</code> method with a more testable signature, where
+exit code is returned — <code>int run(String[] args)</code>. To avoid the global mutable state in our testing code (<code>System.out</code> and
+<code>System.err</code> values), we may want to pass <code>PrintStream</code> instances in our <code>run()</code>, and we’ll end up with this:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>TravellingApp</span> <span style=color:#000;font-weight:700>{</span>
+
+  <span style=color:#000;font-weight:700>private</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>int</span> <span style=color:#900;font-weight:700>exit</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>PrintStream</span> <span style=background-color:#f8f8f8>ps</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>Throwable</span> <span style=background-color:#f8f8f8>t</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>code</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=background-color:#f8f8f8>ps</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>println</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>t</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getMessage</span><span style=color:#000;font-weight:700>());</span>
+    <span style=color:#000;font-weight:700>return</span> <span style=background-color:#f8f8f8>code</span><span style=color:#000;font-weight:700>;</span>
+  <span style=color:#000;font-weight:700>}</span>
+
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>main</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>String</span><span style=color:#000;font-weight:700>[]</span> <span style=background-color:#f8f8f8>args</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#458;font-weight:700>System</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>exit</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>run</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>args</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>System</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>out</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>System</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>err</span><span style=color:#000;font-weight:700>));</span>
+  <span style=color:#000;font-weight:700>}</span>
+
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>int</span> <span style=color:#900;font-weight:700>run</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>String</span><span style=color:#000;font-weight:700>[]</span> <span style=background-color:#f8f8f8>args</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>PrintStream</span> <span style=background-color:#f8f8f8>out</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>PrintStream</span> <span style=background-color:#f8f8f8>err</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#000;font-weight:700>try</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=color:#458;font-weight:700>Cli</span> <span style=background-color:#f8f8f8>cli</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>parseCli</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>args</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>}</span> <span style=color:#000;font-weight:700>catch</span> <span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>CliParsingException</span> <span style=background-color:#f8f8f8>e</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=background-color:#f8f8f8>out</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>println</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>usageText</span><span style=color:#000;font-weight:700>);</span>
+      <span style=color:#000;font-weight:700>return</span> <span style=color:#900;font-weight:700>exit</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>err</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>e</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>1</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>}</span>
+    <span style=color:#000;font-weight:700>...</span>
+    <span style=color:#000;font-weight:700>return</span> <span style=color:#099>0</span><span style=color:#000;font-weight:700>;</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>Now, looking at this code, an OOP programmer would say: <em>«run() is more testable»</em>. An FP programmer would say:
+<em>«run() has fewer side-effects»</em>.</p>
+<p><code>run()</code> is still not <em>pure</em> because it changes the state of its input arguments <code>out</code> and <code>err</code>. One could make it pure by
+making <code>run()</code> to return a tuple (or for the lack of those in Java, a class) of an int to serve as an exit code and 2
+strings to be printed to <em>out</em> and <em>err</em> streams. But I believe, an average OOP programmer would not go that far.</p>
+<p>At this point, it’s anyway easy to observe, that <em>testability</em> is achieved through eliminating side-effects. Pureness is
+a stricter requirement, of course, in OOP code you’d see many more testable functions than pure functions (or if you
+wish <em>computations</em>). But pure computations do happen in the OOP code.</p>
+<p>It is interesting, that <em>testability</em> lies in the heart of an extremely popular technique among OOP programmers —
+dependency injection (DI). I still occasionally meet people, who associate DI with magical frameworks like Spring and
+Guice. It is, however, a simple technique: <em>inject all dependencies needed for your computation, do not let your
+computations produce those dependencies</em>.</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>NonDiService</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>Dao</span> <span style=background-color:#f8f8f8>dao</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>Dao</span><span style=color:#000;font-weight:700>();</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>DiService</span><span style=color:#000;font-weight:700>{</span>
+  <span style=color:#000;font-weight:700>...</span>
+  <span style=color:#458;font-weight:700>DiService</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Dao</span> <span style=background-color:#f8f8f8>dao</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#000;font-weight:700>this</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>dao</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>dao</span><span style=color:#000;font-weight:700>;</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p><code>service = new NonDiService()</code> and <code>service = new DiService(dao)</code> are manifestations of the same pattern we saw with
+<code>main(args)</code> and <code>run(args, out, err)</code>, and I hope it is evident that DI converges to pure computations and may
+occasionally result in pure computations.</p>
+<p>OOP does not require <em>pure</em> computations, it is usually enough to have a <em>testable</em> computation. The set of <em>testable</em>
+computations is a much broader category than the set of <em>pure</em> computations. But</p>
+<section class="admonition-block important" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Important: </span></h6><p><em>testability</em>, like <em>pureness</em>, is achieved through eliminating side-effects, and occasionally pure computations
+happen in OOP code.</p></section></section>
+<section class="doc-section level-2"><h3 id=_immutable_data_structures><a class=link href=#_immutable_data_structures>Immutable data structures</a></h3><p>Immutable data structures are an inherent feature of FP. However, saying that you don’t have this in OOP would be just
+silly. Here are just a few examples from Java world:</p>
+<div class=ulist><ul><li>Joshua Bloch in his <em>Effective Java</em> suggests minimizing mutability<a class=footnote-ref id=_footnoteref_1 href=#_footnote_1 title="View footnote 1" role=doc-noteref>[1]</a>,</li><li>extremely popular AST sugaring library Lombok offers special annotation for generating immutable value classes <code>@Value</code> <a class=footnote-ref id=_footnoteref_2 href=#_footnote_2 title="View footnote 2" role=doc-noteref>[2]</a>,</li><li>in many companies (most I worked for) Java CI pipeline integrates some static analyzers, like FindBugs, that will
+remind you to make defensive copies of non-primitive types passed as arguments to avoid unexpected mutability,</li><li>immutable collections are offered by standard library and many 3rd-party libraries (Guava, Eclipse collections)…​</li></ul></div>
+<p>Immutability may be not as ubiquitous in other paradigms as it is in FP, but it is certainly not an alien there.</p>
+<section class="admonition-block important" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Important: </span></h6><p>OOP programmers are well familiar with the concept of immutability and understand its benefits and its price very
+well.</p></section></section>
+<section class="doc-section level-2"><h3 id=_avoiding_inheritance><a class=link href=#_avoiding_inheritance>Avoiding inheritance</a></h3><p>In one of his blog posts John A De Goes says<a class=footnote-ref id=_footnoteref_3 href=#_footnote_3 title="View footnote 3" role=doc-noteref>[3]</a>, that</p>
+<div class=quote-block><blockquote><p>object-oriented programming—by which I mean inheritance hierarchies (typified by the Scala collections inheritance
+hierarchy) and subtyping (beyond its use for modeling sum types, modules, and type classes)—isn’t useful.</p></blockquote></div>
+<p>I won’t argue with the claim. But I want to highlight, that the target of his claim is inheritance, not, strictly
+speaking, OOP. Yes, many books say, that inheritance is one of the pillars of OOP, but some don’t.</p>
+<p>Alan Kay, who is considered the inventor of OOP, starts his (quite hard to grok, to be honest) response about inheritance
+with this<a class=footnote-ref id=_footnoteref_4 href=#_footnote_4 title="View footnote 4" role=doc-noteref>[4]</a>:</p>
+<div class=quote-block><blockquote><p>I initially liked the idea — it could be useful — but soon realized that something that would be “mathematically
+binding” was really needed because the mechanism itself let too many semantically different things to be “done” (aka
+“kluged”) by the programmer.</p></blockquote></div>
+<p>Polemics about definitions are rarely productive, let’s see what happens in practice. Joshua Bloch argued for
+composition and delegation over inheritance almost 20 years ago too<a class=footnote-ref id=_footnoteref_5 href=#_footnote_5 title="View footnote 5" role=doc-noteref>[5]</a>. And maybe, 10 years ago I would still occasionally see 7 levels of inheritance in the new
+code, but people don’t do this anymore. I’ve seen Java projects, where programmers preferred code duplication over
+inheritance, and they believed they were doing OOP. Modern non-FP languages (Go, Rust) do not even offer this design
+facility.</p>
+<section class="admonition-block important" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Important: </span></h6><p>Inheritance just proved itself practically inconvenient in <em>many</em> cases, and this is not unique to FP.</p></section></section></section>
+<section class="doc-section level-1"><h2 id=_how_oop_design_patterns_relate_to_fp><a class=link href=#_how_oop_design_patterns_relate_to_fp>How OOP design patterns relate to FP</a></h2><section class="doc-section level-2"><h3 id=_factory><a class=link href=#_factory>Factory</a></h3><p>Let’s consider the infamous <em>Factory</em> pattern (<em>Abstract Factory</em> to be
+precise)<a class=footnote-ref id=_footnoteref_6 href=#_footnote_6 title="View footnote 6" role=doc-noteref>[6]</a>. It is useful when we have to construct an
+object from some data. However, there are 2 complications:</p>
+<div class=ulist><ul><li>the data is scattered through the different stages of program execution (part of the data may be even available in
+compile-time only); and</li><li>the object has to be constructed at the execution stage, where we don’t have access to full data.</li></ul></div>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>interface</span> <span style=color:#458;font-weight:700>ShipFactory</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>Ship</span> <span style=color:#900;font-weight:700>build</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>capacity</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>BoatFactory</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:#458;font-weight:700>ShipFactory</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>BoatFactory</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>WoodSpecies</span> <span style=background-color:#f8f8f8>ws</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>Ship</span> <span style=color:#900;font-weight:700>build</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>capacity</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>YachtFactory</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:#458;font-weight:700>ShipFactory</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>YachtFactory</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>DriveType</span> <span style=background-color:#f8f8f8>dt</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>PremiumPackage</span> <span style=background-color:#f8f8f8>pp</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>Ship</span> <span style=color:#900;font-weight:700>build</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>capacity</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>TravellingApp</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>main</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>String</span><span style=color:#000;font-weight:700>[]</span> <span style=background-color:#f8f8f8>args</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#458;font-weight:700>ShipType</span> <span style=background-color:#f8f8f8>st</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>getShipType</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>args</span><span style=color:#000;font-weight:700>);</span>
+
+    <span style=color:#458;font-weight:700>ShipFactory</span> <span style=background-color:#f8f8f8>sf</span><span style=color:#000;font-weight:700>;</span>
+    <span style=color:#000;font-weight:700>switch</span> <span style=background-color:#f8f8f8>st</span> <span style=color:#000;font-weight:700>{</span> <b class=conum>1</b>
+      <span style=color:#000;font-weight:700>case</span> <span style=color:#900;font-weight:700>Galley:</span>
+        <span style=color:#458;font-weight:700>BoatConfig</span> <span style=background-color:#f8f8f8>c</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>readBoatConfig</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>getConfigPath</span><span style=color:#000;font-weight:700>());</span>
+        <span style=background-color:#f8f8f8>sf</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>BoatFactory</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>c</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>woodSpecies</span><span style=color:#000;font-weight:700>);</span> <b class=conum>2</b>
+        <span style=color:#000;font-weight:700>break</span><span style=color:#000;font-weight:700>;</span>
+      <span style=color:#000;font-weight:700>case</span> <span style=color:#900;font-weight:700>Yacht:</span>
+        <span style=color:#458;font-weight:700>YachtConfig</span> <span style=background-color:#f8f8f8>c</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>readYachtConfig</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>getConfigPath</span><span style=color:#000;font-weight:700>());</span>
+        <span style=background-color:#f8f8f8>sf</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>YachtFactory</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>c</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>driveType</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>c</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>premiumPackage</span><span style=color:#000;font-weight:700>);</span> <b class=conum>2</b>
+        <span style=color:#000;font-weight:700>break</span><span style=color:#000;font-weight:700>;</span>
+    <span style=color:#000;font-weight:700>}</span>
+
+    <span style=background-color:#f8f8f8>assembleExpeditions</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>sf</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>}</span>
+
+  <span style=color:#000;font-weight:700>static</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>assembleExpeditions</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>ShipFactory</span> <span style=background-color:#f8f8f8>sf</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#000;font-weight:700>while</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>newCrewSize</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>readCrewSizeBlocking</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>&gt;</span> <span style=color:#099>0</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+      <span style=color:#458;font-weight:700>Ship</span> <span style=background-color:#f8f8f8>s</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>sf</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>build</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>newCrewSize</span><span style=color:#000;font-weight:700>);</span> <b class=conum>3</b>
+      <span style=background-color:#f8f8f8>sail</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>s</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>At <b class=conum data-value=3>&#8203;</b> we no longer care about the concrete factory type and <b class=conum data-value=3>&#8203;</b> may happen in a different class,
+be invoked in a different thread and much later, than <b class=conum data-value=2>&#8203;</b> where a factory is constructed according to the
+desired type we inspect at <b class=conum data-value=1>&#8203;</b>.</p>
+<p>Combined together <b class=conum data-value=2>&#8203;</b> and <b class=conum data-value=3>&#8203;</b> form a curried function</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>BoatFactory</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>c</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>woodSpecies</span><span style=color:#000;font-weight:700>).</span><span style=color:teal>build</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>newCrewSize</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>new</span> <span style=color:#900;font-weight:700>YachtFactory</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>c</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>driveType</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>c</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>premiumPackage</span><span style=color:#000;font-weight:700>).</span><span style=color:teal>build</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>newCrewSize</span><span style=color:#000;font-weight:700>);</span></code></pre></div>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=scala><span style=color:#000;font-weight:700>def</span> <span style=color:#900;font-weight:700>boatFactory</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>ws</span><span style=color:#000;font-weight:700>:</span> <span style=color:#458;font-weight:700>WoodSpecies</span><span style=color:#000;font-weight:700>)(</span><span style=background-color:#f8f8f8>crewSize</span><span style=color:#000;font-weight:700>:</span> <span style=color:#458;font-weight:700>Int</span><span style=color:#000;font-weight:700>)</span><span style=color:#000;font-weight:700>:</span> <span style=color:#458;font-weight:700>Ship</span>
+<span style=color:#000;font-weight:700>def</span> <span style=color:#900;font-weight:700>yachtFactory</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>dt</span><span style=color:#000;font-weight:700>:</span> <span style=color:#458;font-weight:700>DriveType</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>pp</span><span style=color:#000;font-weight:700>:</span> <span style=color:#458;font-weight:700>PremiumPackage</span><span style=color:#000;font-weight:700>)(</span><span style=background-color:#f8f8f8>crewSize</span><span style=color:#000;font-weight:700>:</span> <span style=color:#458;font-weight:700>Int</span><span style=color:#000;font-weight:700>)</span><span style=color:#000;font-weight:700>:</span> <span style=color:#458;font-weight:700>Ship</span></code></pre></div>
+<p>Notice, that in the original OOP code <b class=conum data-value=1>&#8203;</b> and <b class=conum data-value=2>&#8203;</b> can’t be scattered in code like <b class=conum data-value=2>&#8203;</b>
+and <b class=conum data-value=3>&#8203;</b> can. If we wanted to do that, we’d need another factory (and some refactoring to make types play
+well, but that’s a different story). This is how you get <code>ShipFactoryFactory</code>, and one can continue this infinitely
+long. An important outcome here is that</p>
+<section class="admonition-block important" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Important: </span></h6><p>a factory is 2 functions chained together into a polymorphic curried function.</p></section>
+<p>Composition of factories like functions is also technically possible, however, it rarely happens in practice (and is
+frowned upon) due to convoluted mind-bending semantics and the amount of boilerplate code such composition generates.</p></section>
+<section class="doc-section level-2"><h3 id=_strategy><a class=link href=#_strategy>Strategy</a></h3><p><em>Strategy</em> pattern<a class=footnote-ref id=_footnoteref_7 href=#_footnote_7 title="View footnote 7" role=doc-noteref>[7]</a> is a simple example because it is just a
+function passed into another function. <em>Strategy</em> is the way OOP does function pointers given the lack of such
+abstraction as function.</p>
+<p>I picked this example only to illustrate an interesting feature of the OOP patterns.</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>interface</span> <span style=color:#458;font-weight:700>NavigationStrategy</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>Route</span> <span style=color:#900;font-weight:700>navigate</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Point</span> <span style=background-color:#f8f8f8>origin</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>Point</span> <span style=background-color:#f8f8f8>destination</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>UseWindForceStrategy</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:#458;font-weight:700>NavigationStrategy</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>UseWindForceStrategy</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Forecast</span> <span style=background-color:#f8f8f8>f</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>float</span> <span style=background-color:#f8f8f8>desiredEfficiency</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>Route</span> <span style=color:#900;font-weight:700>navigate</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Point</span> <span style=background-color:#f8f8f8>origin</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>Point</span> <span style=background-color:#f8f8f8>destination</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>ShortestRouteStrategy</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:#458;font-weight:700>NavigationStrategy</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>ShortestRouteStrategy</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>Route</span> <span style=color:#900;font-weight:700>navigate</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Point</span> <span style=background-color:#f8f8f8>origin</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>Point</span> <span style=background-color:#f8f8f8>destination</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>A strategy may be parameterized on creation. This makes it similar to <em>Factory</em> — it can be represented as 2 functions
+chained into a curried function.</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>UseWindForceStrategy</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>forecast</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>efficiency</span><span style=color:#000;font-weight:700>).</span><span style=color:teal>navigate</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>from</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>to</span><span style=color:#000;font-weight:700>);</span></code></pre></div>
+<p>However an OOP programmer wouldn’t use a factory where strategy is expected! OOP patterns differ not only by how the
+computation is performed, but also by the ways these computations can be combined with the rest of the code and the ways
+these computations are mapped to the application’s business domain. <em>Adapter</em> or <em>Decorator</em> would immediately tell you,
+how to use it and that it’s likely a technical artifact that can not be mapped to the business domain, unlike f.ex.
+<em>Strategy</em>.</p>
+<section class="admonition-block important" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Important: </span></h6><p>OOP patterns convey a wide(r) set of meanings, and this is one of the reasons why there are so many of them.</p></section></section>
+<section class="doc-section level-2"><h3 id=_command><a class=link href=#_command>Command</a></h3><p>My favorite example would probably be <em>Command</em> pattern<a class=footnote-ref id=_footnoteref_8 href=#_footnote_8 title="View footnote 8" role=doc-noteref>[8]</a>.</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=background-color:#f8f8f8>inteface</span> <span style=color:#458;font-weight:700>Command</span> <span style=color:#000;font-weight:700>{</span> <b class=conum>1</b>
+  <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>run</span><span style=color:#000;font-weight:700>();</span>
+<span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>HalfAheadCommand</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:#458;font-weight:700>Command</span> <span style=color:#000;font-weight:700>{</span> <b class=conum>2</b>
+  <span style=color:#458;font-weight:700>HalfAheadCommand</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Engine</span> <span style=background-color:#f8f8f8>engine</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>run</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=background-color:#f8f8f8>engine</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>setDirection</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Direction</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>FORWARD</span><span style=color:#000;font-weight:700>);</span>
+    <span style=background-color:#f8f8f8>engine</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>setRevolutions</span><span style=color:#000;font-weight:700>(</span><span style=color:#099>1500</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>StopCommand</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:#458;font-weight:700>Command</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>FullStopCommand</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Engine</span> <span style=background-color:#f8f8f8>engine</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>run</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=background-color:#f8f8f8>engine</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>setRevolutions</span><span style=color:#000;font-weight:700>(</span><span style=color:#099>0</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>DropAnchorCommand</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:#458;font-weight:700>Command</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>DropAnchorCommand</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>AnchoringService</span> <span style=background-color:#f8f8f8>anchoring</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <span style=color:#000;font-weight:700>...</span> <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>run</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=background-color:#f8f8f8>anchoring</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>dropAnchor</span><span style=color:#000;font-weight:700>();</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>ShipControlFacade</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>List</span><span style=color:#000;font-weight:700>&lt;</span><span style=color:#458;font-weight:700>Command</span><span style=color:#000;font-weight:700>&gt;</span> <span style=color:#900;font-weight:700>fullStop</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#458;font-weight:700>Command</span> <span style=background-color:#f8f8f8>stop</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>StopCommand</span><span style=color:#000;font-weight:700>(</span><span style=color:#000;font-weight:700>this</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>engine</span><span style=color:#000;font-weight:700>);</span> <b class=conum>3</b>
+    <span style=color:#458;font-weight:700>Command</span> <span style=background-color:#f8f8f8>dropAnchor</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>DropAnchorCommand</span><span style=color:#000;font-weight:700>(</span><span style=color:#000;font-weight:700>this</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>anchoringService</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>return</span> <span style=color:#458;font-weight:700>Arrays</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>asList</span><span style=color:#000;font-weight:700>({</span><span style=background-color:#f8f8f8>stop</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>dropAnchor</span><span style=color:#000;font-weight:700>});</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>interface</span> <span style=color:#458;font-weight:700>Dispatcher</span> <span style=color:#000;font-weight:700>{</span> <b class=conum>4</b>
+  <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>execute</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Command</span> <span style=background-color:#f8f8f8>c</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>...</span>
+
+<span style=color:#458;font-weight:700>List</span><span style=color:#000;font-weight:700>&lt;</span><span style=color:#458;font-weight:700>Command</span><span style=color:#000;font-weight:700>&gt;</span> <span style=background-color:#f8f8f8>commands</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>shipControlFacade</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>fullStop</span><span style=color:#000;font-weight:700>();</span>
+<span style=color:#000;font-weight:700>for</span> <span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Command</span> <span style=color:#900;font-weight:700>cmd:</span> <span style=background-color:#f8f8f8>commands</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <b class=conum>5</b>
+  <span style=background-color:#f8f8f8>dispatcher</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>execute</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>cmd</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p><code>Command</code> interface <b class=conum data-value=1>&#8203;</b> represents a sub-program and lets a calling side to invoke arbitrary sub-program by
+calling <code>run()</code> method on it. The <code>run()</code> method may return something if needed or accept arguments. That interface may
+have anonymous ad-hoc implementations or its implementations may form a union (GADT) <b class=conum data-value=2>&#8203;</b>.</p>
+<p>Complex actions in the program are combined from small simple commands <b class=conum data-value=3>&#8203;</b>. The pattern does not prescribe
+whether commands should be combined using collections or custom combinators, whether they should be chained passing
+results of execution to each other or whether they should be isolated. It’s important, that sub-programs these commands
+represent are not executed immediately, i.e. side-effects are <em>suspended</em>.</p>
+<p>Commands are then passed <b class=conum data-value=5>&#8203;</b> to a <code>Dispatcher</code> <b class=conum data-value=4>&#8203;</b>, which executes passed commands, but may also
+perform some actions before or after every command, may decide to execute commands concurrently or, on the contrary,
+serialize concurrent access…​ This the point in the program when suspended side-effects are finally executed.</p>
+<p>As with previously examined patterns, commands are just function pointers, but in FP there’s a special name for functions
+that are used to suspend side-effects — <em>IO</em>, or more often <em>IO Monad</em> because that construct does have monadic
+properties. <em>IO Monad</em> implementation together with all the infrastructure forms an <em>effect system</em>. In some languages,
+like Haskell, <em>effect system</em> is baked in the language, in others, like Scala, <em>effect system</em> is shipped as a library,
+and in the latter case resemblance with the command pattern is just striking, especially if you rename <code>Dispatcher</code> to
+<code>Runtime</code> and <code>Command</code> to <code>IO</code>.</p>
+<p>Of course, <em>Command</em> pattern in its original definition is not as powerful and flexible as, say, modern effect systems
+for Scala, but I’ve seen very sophisticated implementations of this pattern in object-oriented Java code, with commands
+being monads and all that.</p></section></section>
+<section class="doc-section level-1"><h2 id=_takeaways><a class=link href=#_takeaways>Takeaways</a></h2><p>Indeed, the basic unit of abstraction in FP — a pure function — is arguably better than some others. It is easier to
+build higher-level abstractions with pure functions, keeping the code clean and semantics easy to understand. But it
+does not mean, that there’s nothing in between the side-effectfull mutable OOP and idealistic FP.</p>
+<section class="admonition-block important" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Important: </span></h6><p>When it comes to solving real-world problems with code, FP or OOP, mutability or immutability, etc. are all false
+dichotomies<a class=footnote-ref id=_footnoteref_9 href=#_footnote_9 title="View footnote 9" role=doc-noteref>[9]</a>.</p></section>
+<p>FP, like any other programming paradigm really, can be seen as a collection of techniques. It is good to be influenced
+by it, to make the best of it, but it’s not mandatory to dive into it fully. Java and C++ borrowed some concepts from FP
+recently. Already mentioned Rust and Go do not offer inheritance, allow higher-order functions, employ error propagation
+models that result in complete functions, Rust allows parametric polymorphism and offers many monadic structures in its
+standard library. All those languages are far from idealistic FP, and yet, they are used successfully to solve real
+problems.</p>
+<p>Your 10 years old legacy project at work doesn’t need to be rewritten in a new language to benefit from immutability or
+pure functions. Quite possibly, as the title of this post says, your project already benefits from some techniques which
+are traditionally attributed to FP.</p></section><section class=footnotes aria-label=Footnotes role=doc-endnotes><hr><ol class=footnotes><li class=footnote id=_footnote_1 role=doc-endnote>Joshua Bloch, <em>Effective Java</em>, Minimize mutability <a class=footnote-backref href=#_footnoteref_1 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_2 role=doc-endnote>Lombok <code>@Value</code> annotation — <a class=bare href=https://projectlombok.org/features/Value>https://projectlombok.org/features/Value</a> <a class=footnote-backref href=#_footnoteref_2 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_3 role=doc-endnote>John A. De Goez, <em>Data Modeling in FP vs OOP</em> — <a class=bare href=http://degoes.net/articles/fp-vs-oop-part1>http://degoes.net/articles/fp-vs-oop-part1</a> <a class=footnote-backref href=#_footnoteref_3 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_4 role=doc-endnote>What does Alan Kay think about inheritance — <a class=bare href=https://www.quora.com/What-does-Alan-Kay-think-about-inheritance-in-object-oriented-programming>https://www.quora.com/What-does-Alan-Kay-think-about-inheritance-in-object-oriented-programming</a> <a class=footnote-backref href=#_footnoteref_4 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_5 role=doc-endnote>Joshua Bloch, <em>Effective Java</em>, Favor composition over inheritance <a class=footnote-backref href=#_footnoteref_5 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_6 role=doc-endnote><a class=bare href=https://en.wikipedia.org/wiki/Abstract_factory_pattern>https://en.wikipedia.org/wiki/Abstract_factory_pattern</a> <a class=footnote-backref href=#_footnoteref_6 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_7 role=doc-endnote><a class=bare href=https://en.wikipedia.org/wiki/Strategy_pattern>https://en.wikipedia.org/wiki/Strategy_pattern</a> <a class=footnote-backref href=#_footnoteref_7 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_8 role=doc-endnote><a class=bare href=https://en.wikipedia.org/wiki/Command_pattern>https://en.wikipedia.org/wiki/Command_pattern</a> <a class=footnote-backref href=#_footnoteref_8 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_9 role=doc-endnote>Scale By The Bay 2018: Bill Venners, Frank Sommers, <em>Effective Scala</em>, 22:54 — <a class=bare href="https://youtu.be/OFuJ04LlE_A?t=1374">https://youtu.be/OFuJ04LlE_A?t=1374</a> <a class=footnote-backref href=#_footnoteref_9 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li></ol></section>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>

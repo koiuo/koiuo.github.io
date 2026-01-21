@@ -1,0 +1,203 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+Turning Synology NAS into a geeky media server | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/synology/mediaserver-p1/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/linux>#linux</a>&nbsp;
+<a href=/tags/synology-ds214>#synology ds214</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>Jan 6, 2016</div>
+</div>
+<h1><a href=https://127001.me/post/synology/mediaserver-p1/>Turning Synology NAS into a geeky media server</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+5 minutes read
+</div>
+</div>
+</header>
+<article>
+<section class="admonition-block warning" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Warning: </span></h6><p>This post was written in pre-docker era. Back in the time it was necessary to perform many things that are
+no longer required on modern devices (like installing Debian Chroot package which, expectedly, is no longer offered).</p>
+<p>Modern devices with Docker support or equivalent features (FWIW, my choice is Linux Station from QNAP) are much more
+friendly towards linux enthusiasts</p></section>
+<aside class="admonition-block note" role=note><h6 class="block-title label-only"><span class=title-label>Note: </span></h6><p>Required files can be downloaded from <a class=bare href=https://github.com/edio/synology-mediaserver>https://github.com/edio/synology-mediaserver</a></p></aside>
+<p>I’m not a huge fan of Synology. I bought my DS214 by friend’s recommendation and became frustrated with it right after
+the purchase. Bundled software was limited and buggy. Many people find Synology products great. But for me it just
+didn’t work well because it forced its use cases on me instead of being a helpful tool for my own very specific use
+cases.</p>
+<p>Anyway, I wasn’t willing to lose money on reselling my NAS, so I decided to get as much as possible from it and
+currently with my DS214Play I can:</p>
+<div class="olist arabic"><ol class=arabic><li>Play virtually any sound via connected USB sound card.</li><li>Particularly, I can play my huge collection of high-resolution music in various formats (with replaygain tags
+respected). All that thanks to <em>mpd</em>, which I can control from any decent phone, web-browser or even smart-watch and
+scrobble all statistics to Last.fm.</li><li>Stream sound from my laptop via <strong>PulseAudio</strong>, while watching videos on YouTube or movies.</li></ol></div>
+<p id=cut>In this and few next posts I’m going to tell, what I have done to get all this.</p>
+<p>Although everything here have been tried on DS214Play it should also work on any other x86-based (or theoretically, even
+on ARM-based) Synology product.</p>
+<p>I do not expect anything bad, but, just in case, standard disclaimer:</p>
+<section class="admonition-block important" role=doc-notice><h6 class="block-title label-only"><span class=title-label>Important: </span></h6><p>everything described here may contain mistakes and inaccuracies, cause data loss or even damage to your hardware.</p></section>
+<section class="doc-section level-1"><h2 id=_notations><a class=link href=#_notations>Notations</a></h2><p>The code you need to execute in a terminal will be presented in code blocks, <code>$</code> prompt means, that code is to be
+executed from an unprivileged user, <code>#</code> means that code must be executed from root. Environment will be given in braces
+before the prompt. For example:</p>
+<div class=ulist><ul><li><p>Execute on NAS from an unprivileged user</p><div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span>nas<span style=color:#000;font-weight:700>)</span><span style=color:teal>$ </span><span style=color:#0086b3>date</span></code></pre></div></li><li><p>Execute as root in chroot</p><div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span><span style=color:#0086b3>chroot</span><span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># date</span></code></pre></div></li></ul></div></section>
+<section class="doc-section level-1"><h2 id=_setup_debian_chroot><a class=link href=#_setup_debian_chroot>Setup Debian chroot</a></h2><p>We start with <a href=https://synocommunity.com/package/debian-chroot>Debian chroot</a> setup because it will help us a lot
+during testing and it’ll be required for PulseAudio to work later.</p>
+<p>Debian repositories contain thousands of applications, and unlike optware solutions all packages are relatively fresh
+and usually work without issues.</p>
+<div class="olist arabic"><ol class=arabic><li>Add SynoCommunity repo following <a href=https://synocommunity.com/#easy-install>official guide</a>. Do not forget to set
+Trust level to <strong>Synology Inc. and trusted publishers</strong></li><li>Install <a href=https://synocommunity.com/package/debian-chroot>Debian Chroot</a> package</li><li>Start this package from <strong>Package Center</strong></li></ol></div>
+<section class="doc-section level-2"><h3 id=_configure_debian_chroot><a class=link href=#_configure_debian_chroot>Configure Debian chroot</a></h3><div class="olist arabic"><ol class=arabic><li><p>SSH to NAS and <code>su</code> to <strong>root</strong></p><div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span>nas<span style=color:#000;font-weight:700>)</span><span style=color:teal>$ </span><span style=color:#0086b3>sudo</span> <span style=color:navy>-s</span></code></pre></div></li><li><p>Chroot to Debian</p><div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span>nas<span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># /var/packages/debian-chroot/scripts/start-stop-status chroot</span></code></pre></div></li><li><p>Update package index and install locales to remove pesky warning about missing locales</p><div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span><span style=color:#0086b3>chroot</span><span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># apt-get update</span>
+<span style=color:#000;font-weight:700>(</span><span style=color:#0086b3>chroot</span><span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># apt-get install locales-all</span></code></pre></div></li><li><p>Install alsa utils as we’ll require them later</p><div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span><span style=color:#0086b3>chroot</span><span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># apt-get install alsa-utils</span></code></pre></div></li><li><p>Exit form chroot (or create another SSH session)</p><div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span><span style=color:#0086b3>chroot</span><span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># exit</span></code></pre></div></li></ol></div></section>
+<section class="doc-section level-2"><h3 id=_share_media_files_to_debian_chroot><a class=link href=#_share_media_files_to_debian_chroot>Share media files to Debian chroot</a></h3><p>By default Debian chroot won’t get access to files stored on NAS (that’s the idea of chroot). We have to mount
+explicitly those directories, we want to expose:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span>nas<span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># mount -o bind /path/to/dir/on/nas /var/packages/debian-chroot/target/var/chroottarget/path/to/dir/in/chroot</span></code></pre></div>
+<p>I created a script under <code>/usr/local/etc/rc.d/</code> to do that mounting automatically on startup. The script must be named
+<code>S[00-99]whatever.sh</code> to be picked up by DSM init framework, where <code>[00-99]</code> determines order of execution. Mine is
+named <code>S90chrootmount.sh</code>:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#998;font-style:italic>#!/bin/sh</span>
+
+<span style=color:#0086b3>.</span> /etc.defaults/rc.subr
+
+<span style=color:teal>CHROOTDIR</span><span style=color:#000;font-weight:700>=</span>/var/packages/debian-chroot/target/var/chroottarget/media
+<span style=color:teal>MEDIADIR</span><span style=color:#000;font-weight:700>=</span>/volume1/media
+
+<span style=color:#000;font-weight:700>case</span> <span style=color:teal>$1</span> <span style=color:#000;font-weight:700>in
+        </span>start<span style=background-color:#f8f8f8>)</span>
+                mount <span style=color:navy>-o</span> <span style=color:#0086b3>bind</span> <span style=color:teal>$MEDIADIR</span> <span style=color:teal>$CHROOTDIR</span>
+        <span style=background-color:#f8f8f8>;;</span>
+        stop<span style=background-color:#f8f8f8>)</span>
+                umount <span style=color:teal>$CHROOTDIR</span>
+        <span style=background-color:#f8f8f8>;;</span>
+        restart<span style=background-color:#f8f8f8>)</span>
+                <span style=color:teal>$0</span> stop
+                <span style=color:#0086b3>sleep </span>1
+                <span style=color:teal>$0</span> start
+        <span style=background-color:#f8f8f8>;;</span>
+        <span style=color:#000;font-weight:700>*</span><span style=background-color:#f8f8f8>)</span>
+                <span style=color:#0086b3>echo</span> <span style=color:#d14>&#34;Usage: </span><span style=color:teal>$0</span><span style=color:#d14> start|stop|restart&#34;</span>
+        <span style=background-color:#f8f8f8>;;</span>
+<span style=color:#000;font-weight:700>esac</span></code></pre></div>
+<p>To expose directory to chroot then, do</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span>nas<span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># /usr/local/etc/rc.d/S90chrootmount.sh start</span></code></pre></div>
+<p>After doing that, we can chroot to Debian again and check that mount worked as expected (<code>/media</code> in chroot should
+corresponds to <code>/volume1/media</code> on NAS for my case).</p></section></section>
+<section class="doc-section level-1"><h2 id=_setup_sound_card><a class=link href=#_setup_sound_card>Setup sound card</a></h2><p>Obviously, sound card should be supported in Linux. I own <strong>Audinst USB HUD mini</strong> and it’s a real plug-n-play. I just
+plug it in, and if alsa is set up, it just works. For what it’s worth, I’m satisfied with the device, it sounds not as
+good as my beloved ESI Juli@, but still it is good for its price.</p>
+<section class="doc-section level-2"><h3 id=_loading_kernel_modules><a class=link href=#_loading_kernel_modules>Loading kernel modules</a></h3><p>For sound card to work we need to install required kernel modules:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#998;font-style:italic>#!/bin/sh</span>
+
+<span style=color:#0086b3>.</span> /etc.defaults/rc.subr
+
+<span style=color:teal>KERNELMODULE</span><span style=color:#000;font-weight:700>=</span><span style=color:#d14>&#34;soundcore snd-page-alloc snd snd-seq-device snd-rawmidi snd-usbmidi-lib snd-usb-lib snd-hwdep snd-timer snd-pcm snd-usb-audio snd-mixer-oss snd-pcm-oss&#34;</span>
+<span style=color:teal>COMPATMODULE</span><span style=color:#000;font-weight:700>=</span><span style=color:#d14>&#34;snd-usb-hiface&#34;</span>
+
+<span style=color:#000;font-weight:700>case</span> <span style=color:teal>$1</span> <span style=color:#000;font-weight:700>in
+        </span>start<span style=background-color:#f8f8f8>)</span>
+                SYNOLoadModules <span style=color:teal>$KERNELMODULE</span>
+                SYNOLoadModules <span style=color:teal>$COMPATMODULE</span>
+        <span style=background-color:#f8f8f8>;;</span>
+        stop<span style=background-color:#f8f8f8>)</span>
+                SYNOUnloadModules <span style=color:teal>$COMPATMODULE</span>
+                SYNOUnloadModules <span style=color:teal>$KERNELMODULE</span>
+        <span style=background-color:#f8f8f8>;;</span>
+        restart<span style=background-color:#f8f8f8>)</span>
+                <span style=color:teal>$0</span> stop
+                <span style=color:#0086b3>sleep </span>1
+                <span style=color:teal>$0</span> start
+        <span style=background-color:#f8f8f8>;;</span>
+        <span style=color:#000;font-weight:700>*</span><span style=background-color:#f8f8f8>)</span>
+                <span style=color:#0086b3>echo</span> <span style=color:#d14>&#34;Usage: </span><span style=color:teal>$0</span><span style=color:#d14> start|stop|restart&#34;</span>
+        <span style=background-color:#f8f8f8>;;</span>
+<span style=color:#000;font-weight:700>esac</span></code></pre></div>
+<p>This will load exactly the modules, that are loaded by <strong>AudioStation</strong>.</p>
+<p>To do that automatically on NAS startup I saved the script as <code>/usr/local/etc/rc.d/S01audiod.sh</code>.</p>
+<p>Load modules without reboot:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span>nas<span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># /usr/local/etc/rc.d/S01audiod.sh start</span></code></pre></div></section>
+<section class="doc-section level-2"><h3 id=_verify_it_works><a class=link href=#_verify_it_works>Verify it works</a></h3><p>Chroot to Debian chroot and test it with <code>aplay</code>. You’ll need some <code>*.wav</code> file in your media files</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span>nas<span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># /var/packages/debian-chroot/scripts/start-stop-status chroot</span>
+<span style=color:#000;font-weight:700>(</span><span style=color:#0086b3>chroot</span><span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># aplay /media/path/to/some.wav</span></code></pre></div>
+<p>If it doesn’t work right ahead, examine output of <code>aplay -L</code>, maybe you need to choose a different device</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span><span style=color:#0086b3>chroot</span><span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># aplay -L</span>
+<span style=color:#000;font-weight:700>(</span><span style=color:#0086b3>chroot</span><span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># aplay -D front /media/path/to/some.wav</span></code></pre></div></section>
+<section class="doc-section level-2"><h3 id=_fixing_permissions_issue><a class=link href=#_fixing_permissions_issue>Fixing permissions issue</a></h3><p>By default sound device is initialized to be accessible only by root user. An easy temporary fix would be</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:#000;font-weight:700>(</span>nas<span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># chmod a+rw /dev/dsp*</span>
+<span style=color:#000;font-weight:700>(</span>nas<span style=color:#000;font-weight:700>)</span><span style=color:#998;font-style:italic># chmod -R a+rw /dev/snd/</span></code></pre></div>
+<p>But then, if device is replugged, you have to do that again. To fix that permanently we need an udev rule to set mode
+each time device is connected.</p>
+<p>Create <code>/usr/lib/udev/rules.d/50-sound.rules</code> with the following content</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:teal>SUBSYSTEM</span><span style=color:#000;font-weight:700>==</span><span style=color:#d14>&#34;sound&#34;</span>, <span style=color:teal>MODE</span><span style=color:#000;font-weight:700>=</span><span style=color:#d14>&#34;0666&#34;</span></code></pre></div>
+<p>Reload udev rules</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(nas)# udevadm control --reload</code></pre></div>
+<p>Reconnect sound card or use reload kernel modules</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>(nas)# /usr/local/etc/rc.d/S01audiod.sh restart</code></pre></div>
+<p>You should see that newly created devices have <code>rw</code> mode for all users:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=sh><span style=color:teal>$ </span><span style=color:#0086b3>ls</span> <span style=color:navy>-l</span> /dev/dsp<span style=color:#000;font-weight:700>*</span>
+crw-rw-rw- 1 root root 14, 67 Aug 15 16:44 /dev/dsp4
+
+<span style=color:teal>$ </span><span style=color:#0086b3>ls</span> <span style=color:navy>-l</span> /dev/snd/<span style=color:#000;font-weight:700>*</span>
+crw-rw-rw- 1 root root 116,  0 Aug 15 16:44 /dev/snd/controlC0
+crw-rw-rw- 1 root root 116, 16 Aug 15 17:38 /dev/snd/pcmC0D0p
+crw-rw-rw- 1 root root 116, 17 Aug 15 16:44 /dev/snd/pcmC0D1p
+crw-rw-rw- 1 root root 116, 33 Aug 15 16:44 /dev/snd/timer</code></pre></div>
+<p>Now every user in <code>audio</code> group in Debian chroot will have access to audio device.</p>
+<p>Basically that’s it. For more experienced users it shouldn’t be hard to setup <em>mpd</em> on Debian to play via ALSA.</p>
+<p>If you’re interested in sound streaming over network with PulseAudio, please check out the
+<a href=/post/synology/mediaserver-p2>next part</a>.</p></section></section>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<div id=disqus_thread></div>
+<script>if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!==-1)document.getElementById('disqus_thread').innerHTML='Disqus comments not available by default when the website is previewed locally.';else{var disqus_config=function(){};(function(){var g=function(){var a=!0;try{a=window.self!==window.top}catch(a){}return a},h,b,c,d,f,a,e;if(g())return;if(h='//127001me.disqus.com/embed.js',b=document,c=b.createElement('script'),c.src=h,c.async=!0,c.setAttribute('data-timestamp',+new Date),d=!1,f=function(){if(d)return;(b.head||b.body).appendChild(c),d=!0},a=b.getElementById('disqus_thread'),c.onerror=function(b){if(sessionStorage.getItem('failure-note'))return;a.innerText='Disqus failed to load',a.style.border='1px dashed',a.style.padding='.5em',a.style.background='lightyellow',sessionStorage.setItem('failure-note',!0)},location.hash.match(/^#comment/))return f();e=function(){if(d)return;var b=a.getBoundingClientRect();b.top<window.innerHeight&&b.bottom>=0&&f()},window.addEventListener('load',e),b.addEventListener('scroll',e)})()}</script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>

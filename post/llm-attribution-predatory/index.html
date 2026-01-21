@@ -1,0 +1,116 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+Pull requests with LLM attribution are predatory behavior | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/llm-attribution-predatory/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/ai>#ai</a>&nbsp;
+<a href=/tags/clean-code>#clean code</a>&nbsp;
+<a href=/tags/git>#git</a>&nbsp;
+<a href=/tags/llm>#llm</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>Jan 21, 2026</div>
+</div>
+<h1><a href=https://127001.me/post/llm-attribution-predatory/>Pull requests with LLM attribution are predatory behavior</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+7 minutes read
+</div>
+</div>
+</header>
+<article>
+<p>If there’s a predator<a class=footnote-ref id=_footnoteref_1 href=#_footnote_1 title="View footnote 1" role=doc-noteref>[1]</a>, there must be prey. Here, the prey is <em>time</em> — first, the time of a person who reviews the PR; second, the time of a maintainer who will be maintaining the code after it lands in master.</p>
+<p>Pull requests are usually asymmetric<a class=footnote-ref href=#_footnote_1 title="View footnote 1" role=doc-noteref>[1]</a>: it takes significantly less effort to write a PR, than to review it and then maintain it.</p>
+<p>But LLMs skew the asymmetry to an absurd proportion. Many open-source projects have recognized<a class=footnote-ref id=_footnoteref_2 href=#_footnote_2 title="View footnote 2" role=doc-noteref>[2]</a><a class=footnote-ref id=_footnoteref_3 href=#_footnote_3 title="View footnote 3" role=doc-noteref>[3]</a><a class=footnote-ref id=_footnoteref_4 href=#_footnote_4 title="View footnote 4" role=doc-noteref>[4]</a> the problem, requiring LLM disclosures or prohibiting LLM-powered contributions altogether. I believe for the majority of projects, the former approach is a flimsy band-aid, and the latter may be the only sustainable strategy — in the near future, at least.</p>
+<section class="doc-section level-1"><h2 id=_why_add_attribution><a class=link href=#_why_add_attribution>Why add attribution?</a></h2><p>The idea of disclosing LLM usage has always seemed moot to me. But let me put my contributor hat on and imagine why I would want to add an LLM attribution to my PR.</p>
+<aside class="admonition-block note" role=note><h6 class="block-title label-only"><span class=title-label>Note: </span></h6><p>The observation that I’m producing a strawman to fight later is not lost on me.</p></aside>
+<p>By disclosing that I used an LLM, I imply that</p>
+<div class=ulist><ul><li>my understanding of the codebase is shallow</li><li>there’s a licensing risk<br>
+local copyright laws may have special clauses for AI-generated content, and the contributed code can turn out to be a copy-paste from a project with an incompatible license</li><li>my understanding of the PR is shallow</li><li>my code contribution is of low quality<br>
+I did not bother reading the contributor’s guide, following established conventions, and putting minimally required effort for my contribution to be useful</li></ul></div>
+<p>If you can think of other implications I’d like to communicate by disclosing LLM usage, please let me know.</p>
+<p>Let’s examine these one by one.</p>
+<section class="doc-section level-2"><h3 id=_my_understanding_of_the_codebase_is_shallow><a class=link href=#_my_understanding_of_the_codebase_is_shallow>My understanding of the codebase is shallow</a></h3><p>It’s okay to have a shallow understanding of the codebase. As humans, we are not required to know everything. It’s pretty common for a contributor to only understand the part they’re touching. If I’m not confident I understand the entire codebase, disclosing LLM usage is redundant.</p></section>
+<section class="doc-section level-2"><h3 id=_theres_a_licensing_risk><a class=link href=#_theres_a_licensing_risk>There’s a licensing risk</a></h3><p>This seems the most reasonable to me so far. But OTOH, I’m not sure it’s actionable. The only sensible action for a maintainer who takes licensing risks seriously would be to reject my contribution. So maybe I should’ve just saved everybody’s time and not opened my PR in the first place.</p></section>
+<section class="doc-section level-2"><h3 id=_my_understanding_of_the_pr_is_shallow><a class=link href=#_my_understanding_of_the_pr_is_shallow>My understanding of the PR is shallow</a></h3><p>This is an extreme version of the first implication. I’ve seen many such PRs on Github and I have opened a few myself. Usually in such cases, the change is very small and localized, there’s a well-defined test/reproduce scenario, and the author can observe the change solving the issue for them, but can’t speak to the bigger impact of the change.</p>
+<p>In this case, it’s better to state exactly that: "I’m not sure if this is the right fix, but it works for me in the following scenario…​". Mentioning LLM here is again redundant.</p>
+<p>However, with LLMs people can submit enormous thousand-line PRs with this exact implication. And this is a case of horrific asymmetry. If I as a contributor don’t understand my enormous PR and expect a reviewer to understand it, then I’m basically expressing a lack of basic respect.</p></section>
+<section class="doc-section level-2"><h3 id=_my_code_contribution_is_of_low_quality><a class=link href=#_my_code_contribution_is_of_low_quality>My code contribution is of low quality</a></h3><p>LLM disclosure doesn’t help here in any way. If it’s a low-quality contribution, just improve it.</p></section>
+<section class="doc-section level-2"><h3 id=_reviewers_perspective><a class=link href=#_reviewers_perspective>Reviewer’s perspective</a></h3><p>As a reviewer (switching hats now), I don’t care about:</p>
+<div class=ulist><ul><li>which LLM you have used</li><li>which agentic LLM-powered assistant you have used</li><li>whether you added "please don’t hallucinate" or whatever is the most effective magical incantation as of 2026</li></ul></div>
+<p>None of this info helps me review your PR.</p></section></section>
+<section class="doc-section level-1"><h2 id=_wont_automated_reviews_help><a class=link href=#_wont_automated_reviews_help>Won’t automated reviews help?</a></h2><p>A low-effort question deserves a low-effort response<a class=footnote-ref href=#_footnote_1 title="View footnote 1" role=doc-noteref>[1]</a>; likewise, a low-effort PR deserves a low-effort review. And if an LLM was used to produce a PR, it’s okay to use another LLM to review the PR.</p>
+<p>There are (hypothetical) situations when this can work, and I’ll cover those later. But first, let me review the difficulties with LLM-powered PR reviews.</p>
+<section class="doc-section level-2"><h3 id=_unclear_focus><a class=link href=#_unclear_focus>Unclear focus</a></h3><p>All codebases are different. All PRs are different. Some PRs should be carefully inspected for race conditions. Others should be inspected from a security angle. From my experience, an LLM should be <em>explicitly</em> instructed to focus on certain important aspects. Otherwise the output is not much different from a linter or a more advanced static analyzer.</p>
+<p>Of course, we may be willing to throw money at the problem and let LLMs scrutinize all PRs from all possible angles (which we’ll have to explicitly enumerate anyway). But then, as reviewers, we get a lot of noise, and the noise matters, because human involvement is likely needed anyway.</p></section>
+<section class="doc-section level-2"><h3 id=_product_focus><a class=link href=#_product_focus>Product focus</a></h3><p>If a PR contributes a feature, one of the angles to scrutinize the PR is how the feature fits the whole product.</p>
+<p>Understanding the product requires context that can’t be derived from the code.</p>
+<p>An LLM might understand whether a feature fits, given it has a detailed roadmap in its context. In my 15+ years of experience, I’ve never encountered a product having such a detailed roadmap. Even products which used to have roadmaps had them sketched in broad strokes, marking the general direction and key features. But that alone wouldn’t be nearly enough to understand whether a small feature contributed by a user fits the big picture.</p></section>
+<section class="doc-section level-2"><h3 id=_where_llm_powered_reviews_could_actually_work><a class=link href=#_where_llm_powered_reviews_could_actually_work>Where LLM-powered reviews could actually work</a></h3><p>I can imagine a codebase with a perfectly written specification and a set of blackbox tests. In this case, an LLM-powered PR review may work wonders, as long as the PR does not mutate blackbox tests. At the same time, I’d imagine the contribution model at such projects implies a focused dedicated team and no external contributions, so this whole post doesn’t apply.</p></section>
+<section class="doc-section level-2"><h3 id=_its_all_about_accountability><a class=link href=#_its_all_about_accountability>It’s all about accountability</a></h3><p>There’s a great quote from a 1979 IBM internal training slide<a class=footnote-ref id=_footnoteref_5 href=#_footnote_5 title="View footnote 5" role=doc-noteref>[5]</a>:</p>
+<div class=quote-block><blockquote><p>A computer can never be held accountable. Therefore a computer must never make a management decision.</p></blockquote></div>
+<p>At the end of the day, it’s the maintainer of the project who will pay for the sloppy PR — with their sleepless nights during outages, their headaches during bug hunting, or their money if they employ LLMs to fix the issue.</p></section>
+<section class="doc-section level-2"><h3 id=_should_contributors_avoid_llms><a class=link href=#_should_contributors_avoid_llms>Should contributors avoid LLMs?</a></h3><p>Absolutely not.</p>
+<p>To me, LLMs have proven to be invaluable research assistants and decent coders. With their help, I can research and understand a large, unfamiliar legacy codebase in a matter of hours instead of days. LLMs are predictably great at generating exhaustive test suites with all possible edge cases from existing code or even from a vague description of the algorithm. They can do magic in analyzing huge amounts of data and detecting anomalies.</p>
+<p>I use LLMs extensively, and I encourage you to use them too.</p>
+<p>And if I ignore the concern of slipping into technofeudalism, I’d say LLMs (or more broadly, AI) are an invaluable part of our future. I’m not an AI skeptic, and I subscribe to the opinion expressed by Richard W. Hamming in his 1997 book <em>"The Art of Doing Science and Engineering: Learning to Learn"</em><a class=footnote-ref id=_footnoteref_6 href=#_footnote_6 title="View footnote 6" role=doc-noteref>[6]</a>. Hamming argues that there’s nothing inherently different between artificial intelligence and <em>organic</em> intelligence (the term is not Hamming’s). I wouldn’t be surprised if we’ll soon have fully automated <em>sustainable</em> and <em>reliable</em> AI-powered software engineering systems.</p>
+<p>But here’s the thing: LLM attribution is not relevant. The only author that matters is the one recorded in the VCS log. And with the current state of AI when you contribute to a project maintained by other people, it’s still you.</p>
+<p>Attribution becomes an escape hatch, a way to avoid accountability. It’s a preemptive excuse that says "don’t blame me, the LLM wrote this." This is precisely what makes it predatory behavior.</p>
+<p>Put effort into your contributions and make them your own. Show some care, understand them deeply, polish them until they’re indistinguishable from what a responsible, meticulous human would produce. Then be proud to have your name next to them in the git log. If you can’t be proud of your contribution and feel the need to cower behind a "Co-authored by Claude" attribution, then perhaps you shouldn’t be contributing at all.</p>
+<p>Best regards.</p>
+<p>P.S. em-dashes are mine.</p></section></section><section class=footnotes aria-label=Footnotes role=doc-endnotes><hr><ol class=footnotes><li class=footnote id=_footnote_1 role=doc-endnote><em>Predator</em>, <em>asymmetry</em> and some other terms are inspired by a blog post "Protecting your time from predators in large tech companies". <a class=bare href=https://www.seangoedecke.com/predators/>https://www.seangoedecke.com/predators/</a> <a class=footnote-backref href=#_footnoteref_1 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_2 role=doc-endnote>cURL removes bug bounties, hoping that this will reduce AI slop. <a class=bare href=https://etn.se/index.php/nyheter/72808-curl-removes-bug-bounties.html>https://etn.se/index.php/nyheter/72808-curl-removes-bug-bounties.html</a> <a class=footnote-backref href=#_footnoteref_2 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_3 role=doc-endnote>Ghostty: AI tooling must be disclosed for contributions. <a class=bare href=https://github.com/ghostty-org/ghostty/pull/8289>https://github.com/ghostty-org/ghostty/pull/8289</a> <a class=footnote-backref href=#_footnoteref_3 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_4 role=doc-endnote>Zig: Strict No LLM / No AI Policy. <a class=bare href=https://ziglang.org/code-of-conduct/#strict-no-llm-no-ai-policy>https://ziglang.org/code-of-conduct/#strict-no-llm-no-ai-policy</a> <a class=footnote-backref href=#_footnoteref_4 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_5 role=doc-endnote>The quote became widely known after being shared online in 2017. While IBM archives could not locate the original slide, it was reportedly from internal training materials used by branch offices. <a class=bare href=https://simonwillison.net/2025/Feb/3/a-computer-can-never-be-held-accountable/>https://simonwillison.net/2025/Feb/3/a-computer-can-never-be-held-accountable/</a> <a class=footnote-backref href=#_footnoteref_5 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_6 role=doc-endnote>Chapter 6. Can machines think? <a class=footnote-backref href=#_footnoteref_6 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li></ol></section>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>

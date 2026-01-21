@@ -1,0 +1,146 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+Filtering ScalaTest tests by tags in sbt | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/filter-scalatests-by-tags-in-sbt/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/sbt>#sbt</a>&nbsp;
+<a href=/tags/scala>#scala</a>&nbsp;
+<a href=/tags/scalatest>#scalatest</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>Jul 8, 2019</div>
+</div>
+<h1><a href=https://127001.me/post/filter-scalatests-by-tags-in-sbt/>Filtering ScalaTest tests by tags in sbt</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+3 minutes read
+</div>
+</div>
+</header>
+<article>
+<p><em>ScalaTest</em> lets you tagging your tests with arbitrary tags and then filtering
+by tags when executing tests.</p>
+<p>It’s not immediately obvious though, how to make use of this in <em>sbt</em>, at least
+I couldn’t find an answer on the very first page in Google or StackOverflow,
+and I remember myself looking for a complete solution for quite a while, so
+here it is.</p>
+<p id=cut>For example, we want to test <em>Kubernetes</em> integration and some of our tests depend on
+<em>Kubernetes</em> instance up and running. Such tests also can’t be executed in parallel.</p>
+<p>As defined in <em>ScalaTest</em>
+documentation<a class=footnote-ref id=_footnoteref_1 href=#_footnote_1 title="View footnote 1" role=doc-noteref>[1]</a>,
+we create a tag and use it to tag our tests:</p>
+<figure class=listing-block><figcaption>package.scala</figcaption>
+<pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=scala><span style=color:#000;font-weight:700>object</span> <span style=color:#458;font-weight:700>myapp</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#000;font-weight:700>object</span> <span style=color:#458;font-weight:700>K8STest</span> <span style=color:#000;font-weight:700>extends</span> <span style=color:#458;font-weight:700>Tag</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;myapp.k8s&#34;</span><span style=color:#000;font-weight:700>)</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></figure>
+<figure class=listing-block><figcaption>KubernetesServiceSpec.scala</figcaption>
+<pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=scala><span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>KubernetesServiceSpec</span> <span style=color:#000;font-weight:700>extends</span> <span style=color:#458;font-weight:700>AsyncFuncSpec</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#900;font-weight:700>it</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;should connect to kubernetes&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>K8STest</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span> <b class=conum>1</b>
+    <span style=color:#000;font-weight:700>...</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></figure>
+<p><b class=conum data-value=1>&#8203;</b> test is tagged with <code>K8STest</code> tag</p>
+<p>Selecting only tests with certain tags in <em>ScalaTest</em> is possible by passing
+additional arguments to its test
+runner<a class=footnote-ref id=_footnoteref_2 href=#_footnote_2 title="View footnote 2" role=doc-noteref>[2]</a>.
+So immediately we are able to include or exclude certain tests when using
+<em>sbt</em>'s <code>testOnly</code> task:</p>
+<div class=listing-block><pre>&gt; testOnly * -- -n myapp.k8s
+
+&gt; testOnly * -- -l myapp.k8s</pre></div>
+<p>This, obviuosly, is not convenient. Call it a whim, but I’d like to stick to the
+<code>test</code> task which would execute isolated tests, and it would be great to have a
+dedicated task to execute tests that depend on environment.</p>
+<p>Luckily, the first whim is easy to satisfy, as <em>sbt</em> allows us to specify
+arguments to pass to test
+runner<a class=footnote-ref id=_footnoteref_3 href=#_footnote_3 title="View footnote 3" role=doc-noteref>[3]</a>
+when executing <code>test</code> task. There are many ways how the second goal can be
+achieved in <em>sbt</em>, my preference is to declare a separate configuration for
+this.</p>
+<p>Here’s the complete solution:</p>
+<figure class=listing-block><figcaption>build.sbt</figcaption>
+<pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=scala><span style=color:#000;font-weight:700>lazy</span> <span style=color:#000;font-weight:700>val</span> <span style=color:teal>K8STest</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#900;font-weight:700>config</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;k8s&#34;</span><span style=color:#000;font-weight:700>)</span> <span style=background-color:#f8f8f8>extend</span> <span style=color:#458;font-weight:700>Test</span> <b class=conum>1</b>
+
+<span style=color:#000;font-weight:700>lazy</span> <span style=color:#000;font-weight:700>val</span> <span style=color:teal>myapp</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>project</span> <span style=background-color:#f8f8f8>in</span> <span style=color:#900;font-weight:700>file</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;.&#34;</span><span style=color:#000;font-weight:700>)).</span>
+  <span style=color:#900;font-weight:700>configs</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>K8STest</span><span style=color:#000;font-weight:700>).</span> <b class=conum>2</b>
+  <span style=color:#900;font-weight:700>settings</span><span style=color:#000;font-weight:700>(</span>
+    <span style=background-color:#f8f8f8>name</span> <span style=color:#000;font-weight:700>:=</span> <span style=color:#d14>&#34;myapp&#34;</span><span style=color:#000;font-weight:700>,</span>
+    <span style=color:#000;font-weight:700>...</span>
+    <span style=background-color:#f8f8f8>testOptions</span> <span style=background-color:#f8f8f8>in</span> <span style=color:#458;font-weight:700>Test</span> <span style=color:#000;font-weight:700>:=</span> <span style=color:#458;font-weight:700>Seq</span><span style=color:#000;font-weight:700>(</span><span style=color:teal>Tests</span><span style=color:#000;font-weight:700>.</span><span style=background-color:#f8f8f8>Argument</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;-l&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;myapp.k8s&#34;</span><span style=color:#000;font-weight:700>)),</span> <b class=conum>3</b>
+
+    <span style=color:#900;font-weight:700>inConfig</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>K8STest</span><span style=color:#000;font-weight:700>)(</span><span style=color:teal>Defaults</span><span style=color:#000;font-weight:700>.</span><span style=background-color:#f8f8f8>testTasks</span><span style=color:#000;font-weight:700>),</span> <b class=conum>4</b>
+    <span style=background-color:#f8f8f8>testOptions</span> <span style=background-color:#f8f8f8>in</span> <span style=background-color:#f8f8f8>K8STest</span> <span style=color:#000;font-weight:700>:=</span> <span style=color:#458;font-weight:700>Seq</span><span style=color:#000;font-weight:700>(</span><span style=color:teal>Tests</span><span style=color:#000;font-weight:700>.</span><span style=background-color:#f8f8f8>Argument</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;-n&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;myapp.k8s&#34;</span><span style=color:#000;font-weight:700>)),</span> <b class=conum>5</b>
+    <span style=background-color:#f8f8f8>parallelExecution</span> <span style=background-color:#f8f8f8>in</span> <span style=background-color:#f8f8f8>K8STest</span> <span style=color:#000;font-weight:700>:=</span> <span style=color:#000;font-weight:700>false</span><span style=color:#000;font-weight:700>,</span> <b class=conum>6</b>
+  <span style=color:#000;font-weight:700>)</span></code></pre><ol class="callout-list arabic"><li>declare new configuration <code>k8s</code> that extends from <code>Test</code> configuration.
+Extending means, that this configuration will delegate to <code>Test</code> configuration
+when missing definitions are requested</li><li>add new configuration to the project</li><li>exclude k8s-tagged tests when executing <code>test</code> task in <code>Test</code> configuration</li><li>(re)define <em>test</em> tasks (<code>test</code>, <code>testOnly</code>, etc.) for the <code>K8STest</code>
+configuration. Note, that for other tasks, such as <code>compile</code>, <code>K8STest</code> will
+still delegate to <code>Test</code>. If we didn’t do this, <code>test</code> would be delegated to
+<code>Test</code> and hence entire test runner configuration would be reused</li><li>include only k8s-tagged tests when executing <code>test</code> task in <code>K8STest</code>
+configuration</li><li>any other configuration options can be adjusted as needed</li></ol></figure>
+<p>We now have 2 tasks with short and self-explanatory names, and also it is easy
+to fine-tune execution of each task without affecting the other:</p>
+<div class=listing-block><pre>&gt; test
+
+&gt; k8s:test</pre></div>
+<p>We can take this as far as imagination goes: adding <code>all:test</code> for convenience,
+adding global setup and cleanup functions for each type of
+tests<a class=footnote-ref id=_footnoteref_4 href=#_footnote_4 title="View footnote 4" role=doc-noteref>[4]</a>…​</p>
+<p>Make sure to look through the whole <em>Testing</em> section in sbt
+documentation<a class=footnote-ref id=_footnoteref_5 href=#_footnote_5 title="View footnote 5" role=doc-noteref>[5]</a> for more
+ideas and interesting examples.</p><section class=footnotes aria-label=Footnotes role=doc-endnotes><hr><ol class=footnotes><li class=footnote id=_footnote_1 role=doc-endnote><a class=bare href=http://www.scalatest.org/user_guide/tagging_your_tests>http://www.scalatest.org/user_guide/tagging_your_tests</a> <a class=footnote-backref href=#_footnoteref_1 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_2 role=doc-endnote><a class=bare href=http://www.scalatest.org/user_guide/using_the_runner#filtering>http://www.scalatest.org/user_guide/using_the_runner#filtering</a> <a class=footnote-backref href=#_footnoteref_2 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_3 role=doc-endnote><a class=bare href=https://www.scala-sbt.org/1.x/docs/Testing.html#Test+Framework+Arguments>https://www.scala-sbt.org/1.x/docs/Testing.html#Test+Framework+Arguments</a> <a class=footnote-backref href=#_footnoteref_3 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_4 role=doc-endnote><a class=bare href=https://www.scala-sbt.org/1.x/docs/Testing.html#Setup+and+Cleanup>https://www.scala-sbt.org/1.x/docs/Testing.html#Setup+and+Cleanup</a> <a class=footnote-backref href=#_footnoteref_4 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li><li class=footnote id=_footnote_5 role=doc-endnote><a class=bare href=https://www.scala-sbt.org/1.x/docs/Testing.html>https://www.scala-sbt.org/1.x/docs/Testing.html</a> <a class=footnote-backref href=#_footnoteref_5 role=doc-backlink title="Jump to the first occurrence in the text">↩</a></li></ol></section>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>fp on 127.0.0.1</title><link>https://127001.me/tags/fp/</link><description>Recent content in fp on 127.0.0.1</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>Dmytro Kostiuchenko</copyright><lastBuildDate>Mon, 10 Feb 2020 22:59:08 -0500</lastBuildDate><atom:link href="https://127001.me/tags/fp/index.xml" rel="self" type="application/rss+xml"/><item><title>You may be doing FP already</title><link>https://127001.me/post/you-may-be-doing-fp-already/</link><pubDate>Mon, 10 Feb 2020 22:59:08 -0500</pubDate><guid>https://127001.me/post/you-may-be-doing-fp-already/</guid><description>&lt;p>Functional programming (FP) has been a somewhat hot topic in recent years in my surroundings. Although in my &lt;em>close&lt;/em>
+surroundings people are usually not zealous or overly excited, I do notice sometimes talks, discussions and vocally
+expressed opinions where &lt;em>tremendous&lt;/em> benefits of FP over other paradigms are claimed, through presenting FP as a
+fundamentally new approach to writing code, opposite to, say, OOP. Some go as far as saying, that one must fully ditch
+OOP and all related experience because it’s all just a mistake.&lt;/p>
+&lt;p>Such extreme claims are rarely challenged. When a person with an OOP background gets involved in any FP-related
+discussion, it quickly gets overwhelmed with new unfamiliar vocabulary: algebras, monads, semigroups, functors, type
+classes…​ And I start questioning intents of those claims — are they made to make people shift to FP, or to prove, that
+some definition of FP is better than some definition of OOP?&lt;/p>
+&lt;p>With this post, I hope to show that FP can be seen as an evolutionary step, a generalization over practices we already
+consider the best in OOP paradigm. And if viewed like this, it can be useful even when adopted gradually. I hope this
+point of view will persuade programmers to look into FP and to borrow new techniques from it to improve non-FP code.&lt;/p></description></item></channel></rss>

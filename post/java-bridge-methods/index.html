@@ -1,0 +1,301 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<title>
+Overloading that is not permitted or Java bridge methods | 127.0.0.1
+</title>
+<meta name=viewport content="width=device-width,user-scalable=yes,maximum-scale=1.5,initial-scale=1">
+<link rel=canonical href=https://127001.me/post/java-bridge-methods/>
+<link rel=apple-touch-icon-precomposed sizes=144x144 href=/favicon144.png>
+<link rel="shortcut icon" href=/favicon.png>
+<link rel=stylesheet href=https://127001.me/css/bundle.min.css>
+<link href=https://127001.me/index.xml rel=alternate type=application/rss+xml title=127.0.0.1>
+<link href=https://127001.me/index.xml rel=feed type=application/rss+xml title=127.0.0.1>
+<script data-goatcounter=https://127001.goatcounter.com/count async src=//gc.zgo.at/count.js></script>
+</head>
+<div class=container>
+<header role=banner>
+<div class=title-block>
+<span class=title-span>
+<a class=title href=https://127001.me/>
+<span class=user>me</span>@<span class=host>127.0.0.1</span>:<span class=cwd>~</span><span class=prompt>$</span> <span class=cursor>_</span>
+</a>
+<a class=rss href=https://127001.me/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fa fa-rss"></i>
+</a>
+</span>
+</div>
+</header>
+<script>window.addEventListener('DOMContentLoaded',()=>{const a=new IntersectionObserver(a=>{a.forEach(a=>{const c=a.target.querySelector('h1, h2, h3, h4, h5, h6, h7'),b=c.getAttribute('id');a.intersectionRatio>0?document.querySelector(`nav li a[href="#${b}"]`).classList.add('active'):document.querySelector(`nav li a[href="#${b}"]`).classList.remove('active')})});document.querySelectorAll('section.doc-section').forEach(b=>{a.observe(b)})})</script>
+<main role=main>
+<header>
+<div style=display:flex>
+<div style=flex:1>
+<div class=post-tags>
+<span class=post-tags-list>
+<a href=/tags/asm>#asm</a>&nbsp;
+<a href=/tags/java>#java</a>&nbsp;
+<a href=/tags/jvm>#jvm</a>&nbsp;
+</span>
+</div>
+</div>
+<div class=post-date>May 9, 2016</div>
+</div>
+<h1><a href=https://127001.me/post/java-bridge-methods/>Overloading that is not permitted or Java bridge methods</a></h1>
+<div style=display:flex>
+<div class=post-reading-time>
+7 minutes read
+</div>
+</div>
+</header>
+<article>
+<aside class="admonition-block note" role=note><h6 class=block-title><span class=title-label>Note: </span>Third-party translation</h6><p>This article is also available in Russian <a class=bare href=https://habr.com/ru/company/haulmont/blog/426419/>https://habr.com/ru/company/haulmont/blog/426419/</a></p></aside>
+<p>Most of my technical interviews for Java developer position include a puzzle, where candidate should implement 2 very
+similar interfaces in a single class:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#998;font-style:italic>// Implement both interfaces in a single class if possible</span>
+<span style=color:#998;font-style:italic>// Explain why possible or not possible</span>
+
+<span style=color:#000;font-weight:700>interface</span> <span style=color:#458;font-weight:700>WithPrimitiveInt</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>m</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>i</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>interface</span> <span style=color:#458;font-weight:700>WithInteger</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>m</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Integer</span> <span style=background-color:#f8f8f8>i</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>Sometimes candidates, not being sure about the right answer, are willing to solve the following puzzle instead (I give
+it to candidates later anyway):</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>interface</span> <span style=color:#458;font-weight:700>S</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>String</span> <span style=color:#900;font-weight:700>m</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>i</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>}</span>
+
+<span style=color:#000;font-weight:700>interface</span> <span style=color:#458;font-weight:700>V</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>m</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>i</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p id=cut>Indeed, the latter puzzle appears to be much easier, and most of the candidates answer, that implementation of both
+methods in a signle class shouldn’t be possible, because the signatures of <code>S.m(int)</code> and <code>V.m(int)</code> are the same while
+return types are different. And this is absolutely correct.</p>
+<p>Sometimes, though, I ask another question on the topic:</p>
+<div class=quote-block><blockquote><p>Do you think, it would make any sense to allow implementation of methods with the same method signature but different
+return types in a single class? Maybe, in some hypothetical JVM-based language or at least on a JVM level?</p></blockquote></div>
+<p>That’s kind of an open question and I do not expect a single correct answer here. But although I do not expect one, the
+correct answer exists. And a person, who worked with the reflections API a lot, performed bytecode manipulations or read
+JVM specification might know it.</p>
+<section class="doc-section level-1"><h2 id=_java_method_signature_vs_jvm_method_descriptor><a class=link href=#_java_method_signature_vs_jvm_method_descriptor>Java method signature vs JVM method descriptor</a></h2><p>Java method signature (i.e. method name and types of parameters) is only imposed by Java compiler during compilation.
+JVM, on the other hand, distinguishes methods in a class by a combination of the
+<a href=https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.2.2>unqualified method name</a> (simply the name of
+the method) and the
+<a href=https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.3.3>method descriptor</a>, that is a list of
+parameter descriptors and one return descriptor.</p>
+<p>For example, if we wanted to invoke a method <code>String m(int i)</code> directly on a class <code>foo.Bar</code>, in the bytecode we’d need
+to have:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>INVOKEVIRTUAL foo/Bar.m (I)Ljava/lang/String;</code></pre></div>
+<p>and for <code>void m(int i)</code> it would be:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>INVOKEVIRTUAL foo/Bar.m (I)V</code></pre></div>
+<p>That said, JVM is perfectly fine with <code>String m(int i)</code> and <code>void m(int i)</code> in a single class. All we need to do, is to
+generate proper bytecode.</p></section>
+<section class="doc-section level-1"><h2 id=_bytecode_kung_fu><a class=link href=#_bytecode_kung_fu>Bytecode Kung Fu</a></h2><p>We have interfaces <code>S</code> and <code>V</code>, let’s generate now a class <code>SV</code> which implements both those interfaces. Representation
+in Java, if it was allowed, should look like this:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>SV</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:teal>S</span><span style=color:#000;font-weight:700>,</span> <span style=color:teal>V</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>void</span> <span style=color:#900;font-weight:700>m</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>i</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#458;font-weight:700>System</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>out</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>println</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;void m(int i)&#34;</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>}</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>String</span> <span style=color:#900;font-weight:700>m</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>int</span> <span style=background-color:#f8f8f8>i</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#458;font-weight:700>System</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>out</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>println</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;String m(int i)&#34;</span><span style=color:#000;font-weight:700>);</span>
+    <span style=color:#000;font-weight:700>return</span> <span style=color:#000;font-weight:700>null</span><span style=color:#000;font-weight:700>;</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>To generate bytecode we’ll use <a href=http://asm.ow2.org/index.html>Objectweb ASM library</a>, which is low-level enough to get
+a feeling of what JVM bytecode is.</p>
+<p><a href=http://github.com/edio/java-bridge-methods>Full source code</a> is shared on github, here I’ll only list and explain
+essential snippets.</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#458;font-weight:700>ClassWriter</span> <span style=background-color:#f8f8f8>cw</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>ClassWriter</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>ClassWriter</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>COMPUTE_FRAMES</span><span style=color:#000;font-weight:700>);</span> <b class=conum>1</b>
+
+<span style=color:#998;font-style:italic>// package edio.java.experiments</span>
+<span style=color:#998;font-style:italic>// public class SV implements S, V</span>
+<span style=background-color:#f8f8f8>cw</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visit</span><span style=color:#000;font-weight:700>(</span><span style=color:teal>V1_7</span><span style=color:#000;font-weight:700>,</span> <span style=color:teal>ACC_PUBLIC</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;edio/java/experiments/SV&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#000;font-weight:700>null</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;java/lang/Object&#34;</span><span style=color:#000;font-weight:700>,</span>
+    <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>String</span><span style=color:#000;font-weight:700>[]{</span>
+      <span style=color:#d14>&#34;edio/java/experiments/S&#34;</span><span style=color:#000;font-weight:700>,</span>
+      <span style=color:#d14>&#34;edio/java/experiments/V&#34;</span>
+    <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>);</span> <b class=conum>2</b>
+
+<span style=color:#998;font-style:italic>// constructor</span>
+<span style=color:#458;font-weight:700>MethodVisitor</span> <span style=background-color:#f8f8f8>constructor</span> <span style=color:#000;font-weight:700>=</span>
+    <span style=background-color:#f8f8f8>cw</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitMethod</span><span style=color:#000;font-weight:700>(</span><span style=color:teal>ACC_PUBLIC</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;&lt;init&gt;&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;()V&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#000;font-weight:700>null</span><span style=color:#000;font-weight:700>,</span> <span style=color:#000;font-weight:700>null</span><span style=color:#000;font-weight:700>);</span> <b class=conum>3</b>
+<span style=background-color:#f8f8f8>constructor</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitCode</span><span style=color:#000;font-weight:700>();</span>
+<span style=background-color:#f8f8f8>constructor</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitVarInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>ALOAD</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>0</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>constructor</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitMethodInsn</span><span style=color:#000;font-weight:700>(</span>
+    <span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>INVOKESPECIAL</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;java/lang/Object&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;&lt;init&gt;&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;()V&#34;</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>constructor</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>RETURN</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>constructor</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitMaxs</span><span style=color:#000;font-weight:700>(</span><span style=color:#099>1</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>1</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>constructor</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitEnd</span><span style=color:#000;font-weight:700>();</span>
+
+<span style=color:#998;font-style:italic>// public String m(int i)</span>
+<span style=color:#458;font-weight:700>MethodVisitor</span> <span style=background-color:#f8f8f8>mString</span> <span style=color:#000;font-weight:700>=</span>
+    <span style=background-color:#f8f8f8>cw</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitMethod</span><span style=color:#000;font-weight:700>(</span><span style=color:teal>ACC_PUBLIC</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;m&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;(I)Ljava/lang/String;&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#000;font-weight:700>null</span><span style=color:#000;font-weight:700>,</span> <span style=color:#000;font-weight:700>null</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>mString</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitCode</span><span style=color:#000;font-weight:700>();</span>
+<span style=background-color:#f8f8f8>mString</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitFieldInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>GETSTATIC</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;java/lang/System&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;out&#34;</span><span style=color:#000;font-weight:700>,</span>
+    <span style=color:#d14>&#34;Ljava/io/PrintStream;&#34;</span><span style=color:#000;font-weight:700>);</span> <b class=conum>4</b>
+<span style=background-color:#f8f8f8>mString</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitLdcInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;String&#34;</span><span style=color:#000;font-weight:700>);</span> <b class=conum>5</b>
+<span style=background-color:#f8f8f8>mString</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitMethodInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>INVOKEVIRTUAL</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;java/io/PrintStream&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;println&#34;</span><span style=color:#000;font-weight:700>,</span>
+    <span style=color:#d14>&#34;(Ljava/lang/String;)V&#34;</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>mString</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>ACONST_NULL</span><span style=color:#000;font-weight:700>);</span> <b class=conum>6</b>
+<span style=background-color:#f8f8f8>mString</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>ARETURN</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>mString</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitMaxs</span><span style=color:#000;font-weight:700>(</span><span style=color:#099>2</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>2</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>mString</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitEnd</span><span style=color:#000;font-weight:700>();</span>
+
+<span style=color:#998;font-style:italic>// public void m(int i)</span>
+<span style=color:#458;font-weight:700>MethodVisitor</span> <span style=background-color:#f8f8f8>mVoid</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>cw</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitMethod</span><span style=color:#000;font-weight:700>(</span><span style=color:teal>ACC_PUBLIC</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;m&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;(I)V&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#000;font-weight:700>null</span><span style=color:#000;font-weight:700>,</span> <span style=color:#000;font-weight:700>null</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>mVoid</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitFieldInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>GETSTATIC</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;java/lang/System&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;out&#34;</span><span style=color:#000;font-weight:700>,</span>
+    <span style=color:#d14>&#34;Ljava/io/PrintStream;&#34;</span><span style=color:#000;font-weight:700>);</span> <b class=conum>4</b>
+<span style=background-color:#f8f8f8>mVoid</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitLdcInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;void&#34;</span><span style=color:#000;font-weight:700>);</span> <b class=conum>5</b>
+<span style=background-color:#f8f8f8>mVoid</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitMethodInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>INVOKEVIRTUAL</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;java/io/PrintStream&#34;</span><span style=color:#000;font-weight:700>,</span> <span style=color:#d14>&#34;println&#34;</span><span style=color:#000;font-weight:700>,</span>
+    <span style=color:#d14>&#34;(Ljava/lang/String;)V&#34;</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>mVoid</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitInsn</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>Opcodes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>RETURN</span><span style=color:#000;font-weight:700>);</span> <b class=conum>6</b>
+<span style=background-color:#f8f8f8>mVoid</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitMaxs</span><span style=color:#000;font-weight:700>(</span><span style=color:#099>2</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>2</span><span style=color:#000;font-weight:700>);</span>
+<span style=background-color:#f8f8f8>mVoid</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitEnd</span><span style=color:#000;font-weight:700>();</span>
+
+<span style=background-color:#f8f8f8>cw</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>visitEnd</span><span style=color:#000;font-weight:700>();</span></code></pre><ol class="callout-list arabic"><li>We start with creating <code>ClassWriter</code> to generate bytecode.</li><li>Then we declare a class, that implements interfaces <code>S</code> and <code>V</code>.</li><li>Although, our reference pseudo-java code for <code>SV</code> didn’t contain any constructors, we must generate code for it
+anyway, if we do not declare constructors in Java, compiler implicitly generates empty constructor for us.</li><li>In the methods bodies we start by obtaining the <code>out</code> field of type <code>java.io.PrintStream</code> from <code>System</code> class and
+pushing it onto the operand stack</li><li>Then we load a constant (<code>"String"</code> or <code>"void"</code>) onto the stack and invoke <code>println</code>
+on an obtained <code>out</code> reference with the string constant as an argument.</li><li>Finally, for <code>String m(int i)</code> we push a constant of type reference with value <code>null</code> to stack and use a correspondingly
+typed <code>return</code> instruction, <code>ARETURN</code> it is, to return a value back to a method caller. For the <code>void m(int i)</code> we use
+untyped <code>RETURN</code> to only jump back to a method caller without returning a value.</li></ol></div>
+<p>To verify, that our bytecode is correct (and I’ve been doing this all the time, iteratively fixing the issues), we write
+the generated class to a filesystem</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#458;font-weight:700>Files</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>write</span><span style=color:#000;font-weight:700>(</span><span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>File</span><span style=color:#000;font-weight:700>(</span><span style=color:#d14>&#34;/tmp/SV.class&#34;</span><span style=color:#000;font-weight:700>).</span><span style=color:teal>toPath</span><span style=color:#000;font-weight:700>(),</span> <span style=background-color:#f8f8f8>cw</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>toByteArray</span><span style=color:#000;font-weight:700>());</span></code></pre></div>
+<p>and use <code>jad</code> (java decompiler) to turn bytecode back to java</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code>$ jad -p /tmp/SV.class
+The class file version is 51.0 (only 45.3, 46.0 and 47.0 are supported)
+// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
+// Jad home page: http://www.geocities.com/kpdus/jad.html
+// Decompiler options: packimports(3)
+
+package edio.java.experiments;
+
+import java.io.PrintStream;
+
+// Referenced classes of package edio.java.experiments:
+//            S, V
+
+public class SV
+    implements S, V
+{
+
+    public SV()
+    {
+    }
+
+    public String m(int i)
+    {
+        System.out.println(&#34;String&#34;);
+        return null;
+    }
+
+    public void m(int i)
+    {
+        System.out.println(&#34;void&#34;);
+    }
+}</code></pre></div>
+<p>Close enough, I think.</p></section>
+<section class="doc-section level-1"><h2 id=_using_generated_class_in_runtime><a class=link href=#_using_generated_class_in_runtime>Using generated class in runtime</a></h2><p>Successful decompilation by <code>jad</code> actually guarantees us nothing. <code>jad</code> warns us if there are major problems with the
+bytecode, like frame size to local variables discrepancy or missing return statement. But in general we can’t be sure
+that our generated class will do any job in runtime.</p>
+<p>To use generated class in runtime we need to load it somehow into JVM and then instantiate.</p>
+<p>Let’s implement our own <code>AsmClassLoader</code>. It is just a convenient wrapper around <code>ClassLoader.defineClass</code> method:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>AsmClassLoader</span> <span style=color:#000;font-weight:700>extends</span> <span style=color:#458;font-weight:700>ClassLoader</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>Class</span> <span style=color:#900;font-weight:700>defineAsmClass</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>String</span> <span style=background-color:#f8f8f8>name</span><span style=color:#000;font-weight:700>,</span> <span style=color:#458;font-weight:700>ClassWriter</span> <span style=background-color:#f8f8f8>classWriter</span><span style=color:#000;font-weight:700>)</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#458;font-weight:700>byte</span><span style=color:#000;font-weight:700>[]</span> <span style=background-color:#f8f8f8>bytes</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>classWriter</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>toByteArray</span><span style=color:#000;font-weight:700>();</span>
+    <span style=color:#000;font-weight:700>return</span> <span style=color:#900;font-weight:700>defineClass</span><span style=color:#000;font-weight:700>(</span><span style=background-color:#f8f8f8>name</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>bytes</span><span style=color:#000;font-weight:700>,</span> <span style=color:#099>0</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>bytes</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>length</span><span style=color:#000;font-weight:700>);</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>Now let’s use that classloader and instantiate the class:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#458;font-weight:700>ClassWriter</span> <span style=background-color:#f8f8f8>cw</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#458;font-weight:700>SVGenerator</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>generateClass</span><span style=color:#000;font-weight:700>();</span>
+<span style=color:#458;font-weight:700>AsmClassLoader</span> <span style=background-color:#f8f8f8>classLoader</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>AsmClassLoader</span><span style=color:#000;font-weight:700>();</span>
+<span style=color:#458;font-weight:700>Class</span><span style=color:#000;font-weight:700>&lt;?&gt;</span> <span style=background-color:#f8f8f8>generatedClazz</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>classLoader</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>defineAsmClass</span><span style=color:#000;font-weight:700>(</span><span style=color:#458;font-weight:700>SVGenerator</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>SV_FQCN</span><span style=color:#000;font-weight:700>,</span> <span style=background-color:#f8f8f8>cw</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#458;font-weight:700>Object</span> <span style=background-color:#f8f8f8>o</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>generatedClazz</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>newInstance</span><span style=color:#000;font-weight:700>();</span></code></pre></div>
+<p>Since our class is generated in runtime, we can’t cast to it in our source code. We can cast to the implemented
+interfaces though. And non-reflective invocation becomes possible with this:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>((</span><span style=color:teal>S</span><span style=color:#000;font-weight:700>)</span><span style=background-color:#f8f8f8>o</span><span style=color:#000;font-weight:700>).</span><span style=color:teal>m</span><span style=color:#000;font-weight:700>(</span><span style=color:#099>1</span><span style=color:#000;font-weight:700>);</span>
+<span style=color:#000;font-weight:700>((</span><span style=color:teal>V</span><span style=color:#000;font-weight:700>)</span><span style=background-color:#f8f8f8>o</span><span style=color:#000;font-weight:700>).</span><span style=color:teal>m</span><span style=color:#000;font-weight:700>(</span><span style=color:#099>1</span><span style=color:#000;font-weight:700>);</span></code></pre></div>
+<p>If we execute the code, the output will be:</p>
+<div class=listing-block><pre>String
+void</pre></div>
+<p>To some the output might seem unexpected: we call <strong>the same</strong> (from Java’s perspective) method on a class, but results
+differ depending on the interface we cast object to. Mind-blowing, isn’t it?</p>
+<p>Things become clearer, if we think about the underlying bytecode. For the invocation we performed, compiler generates
+<code>INVOKEINTERFACE</code> instruction and the method descriptor comes not from the class, but from the interface.</p>
+<p>Thus, for the first invocation we’ll have:</p>
+<div class=listing-block><pre>INVOKEINTERFACE edio/java/experiments/S.m (I)Ljava/lang/String;</pre></div>
+<p>and for the second one:</p>
+<div class=listing-block><pre>INVOKEINTERFACE edio/java/experiments/V.m (I)V</pre></div>
+<p>The object, on which invocation is performed, is obtained from the stack. And that is the power behind polymorphism in
+Java.</p></section>
+<section class="doc-section level-1"><h2 id=_bridge_method_is_the_name><a class=link href=#_bridge_method_is_the_name>Bridge method is the name</a></h2><p>One might ask: “So what is the point of that all? Will you ever use that kind of stuff in your code?”</p>
+<p>The thing is that we do use this virtually every time we write usual Java code. For example, covariant return types,
+generics and access to private fields from inner classes are implemented using similar “magic” in bytecode.</p>
+<p>Consider an interface:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>interface</span> <span style=color:#458;font-weight:700>ZeroProvider</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#458;font-weight:700>Number</span> <span style=color:#900;font-weight:700>getZero</span><span style=color:#000;font-weight:700>();</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>and its implementation returning a covariant type:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>IntegerZero</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:#458;font-weight:700>ZeroProvider</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>Integer</span> <span style=color:#900;font-weight:700>getZero</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#000;font-weight:700>return</span> <span style=color:#099>0</span><span style=color:#000;font-weight:700>;</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div>
+<p>Let’s now think about the following code:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#458;font-weight:700>IntegerZero</span> <span style=background-color:#f8f8f8>iz</span> <span style=color:#000;font-weight:700>=</span> <span style=color:#000;font-weight:700>new</span> <span style=color:#458;font-weight:700>IntegerZero</span><span style=color:#000;font-weight:700>();</span>
+<span style=background-color:#f8f8f8>iz</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getZero</span><span style=color:#000;font-weight:700>();</span>
+
+<span style=color:#458;font-weight:700>ZeroProvider</span> <span style=background-color:#f8f8f8>zp</span> <span style=color:#000;font-weight:700>=</span> <span style=background-color:#f8f8f8>iz</span><span style=color:#000;font-weight:700>;</span>
+<span style=background-color:#f8f8f8>zp</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getZero</span><span style=color:#000;font-weight:700>();</span></code></pre></div>
+<p>For the <code>iz.getZero()</code> call compiler will generate <code>INVOKEVIRTUAL</code> with <code>()Ljava/lang/Integer;</code> method descriptor, while
+for the <code>zp.getZero()</code> it will generate <code>INVOKEINTERFACE</code> with <code>()Ljava/lang/Number;</code> method descriptor. We already
+know, that JVM dispatches a call on the object by a method name and a method descriptor. Since descriptors are
+different, those 2 calls can’t be dispatched to the same method in our <code>IntegerZero</code> instance.</p>
+<p>In fact, compiler generates one additional method, which acts as a <em>bridge</em> between the real method we declared in the
+class, and the method used during invocation via interface. Hence the name — <em>bridge method</em>. If only Java permitted
+this, the resulting code would look like:</p>
+<div class=listing-block><pre class="rouge highlight" style=background-color:#f8f8f8><code data-lang=java><span style=color:#000;font-weight:700>public</span> <span style=color:#000;font-weight:700>class</span> <span style=color:#458;font-weight:700>IntegerZero</span> <span style=color:#000;font-weight:700>implements</span> <span style=color:#458;font-weight:700>ZeroProvider</span> <span style=color:#000;font-weight:700>{</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>Integer</span> <span style=color:#900;font-weight:700>getZero</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#000;font-weight:700>return</span> <span style=color:#099>0</span><span style=color:#000;font-weight:700>;</span>
+  <span style=color:#000;font-weight:700>}</span>
+
+  <span style=color:#998;font-style:italic>// This is a synthetic bridge method, which is present only in bytecode.</span>
+  <span style=color:#998;font-style:italic>// Java compiler wouldn&#39;t permit it.</span>
+  <span style=color:#000;font-weight:700>public</span> <span style=color:#458;font-weight:700>Number</span> <span style=color:#900;font-weight:700>getZero</span><span style=color:#000;font-weight:700>()</span> <span style=color:#000;font-weight:700>{</span>
+    <span style=color:#000;font-weight:700>return</span> <span style=color:#000;font-weight:700>this</span><span style=color:#000;font-weight:700>.</span><span style=color:teal>getZero</span><span style=color:#000;font-weight:700>();</span>
+  <span style=color:#000;font-weight:700>}</span>
+<span style=color:#000;font-weight:700>}</span></code></pre></div></section>
+<section class="doc-section level-1"><h2 id=_afterword><a class=link href=#_afterword>Afterword</a></h2><p>Java programming language and Java Virtual Machine are not to be confused: although they share one common word in their
+names and although Java is the main language for JVM, their possibilities and limitations are not always the same.
+Knowing JVM helps a lot understanding Java or any other JVM-based language and knowing Java and its history, on the
+other hand, helps understanding certain decisions in JVM design.</p></section>
+<section class="doc-section level-1"><h2 id=_related_links><a class=link href=#_related_links>Related links</a></h2><div class="olist arabic"><ol class=arabic><li><a href=https://docs.oracle.com/javase/specs/jvms/se7/html/>Java Virtual Machine Specification</a></li><li><a href=http://download.forge.objectweb.org/asm/asm4-guide.pdf>ASM user guide [pdf]</a></li><li><a href=http://github.com/edio/java-bridge-methods>Source code from the article</a></li><li><a href=http://stackoverflow.com/questions/921025/eclipse-warning-about-synthetic-accessor-for-private-static-nested-classes-in-jav>Synthetic accessor for private nested classes in Java [StackOverflow]</a></li></ol></div></section>
+</article>
+</main>
+<section class=comments>
+<script src=https://giscus.app/client.js data-repo=koiuo/koiuo.github.io data-repo-id="MDEwOlJlcG9zaXRvcnk0ODk1OTIyMA==" data-category=Announcements data-category-id=DIC_kwDOAusO9M4CA2zU data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=0 data-theme=light_protanopia data-lang=en crossorigin=anonymous async></script>
+<div id=disqus_thread></div>
+<script>if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!==-1)document.getElementById('disqus_thread').innerHTML='Disqus comments not available by default when the website is previewed locally.';else{var disqus_config=function(){};(function(){var g=function(){var a=!0;try{a=window.self!==window.top}catch(a){}return a},h,b,c,d,f,a,e;if(g())return;if(h='//127001me.disqus.com/embed.js',b=document,c=b.createElement('script'),c.src=h,c.async=!0,c.setAttribute('data-timestamp',+new Date),d=!1,f=function(){if(d)return;(b.head||b.body).appendChild(c),d=!0},a=b.getElementById('disqus_thread'),c.onerror=function(b){if(sessionStorage.getItem('failure-note'))return;a.innerText='Disqus failed to load',a.style.border='1px dashed',a.style.padding='.5em',a.style.background='lightyellow',sessionStorage.setItem('failure-note',!0)},location.hash.match(/^#comment/))return f();e=function(){if(d)return;var b=a.getBoundingClientRect();b.top<window.innerHeight&&b.bottom>=0&&f()},window.addEventListener('load',e),b.addEventListener('scroll',e)})()}</script>
+<noscript>Please enable JavaScript to view the <a href=https://disqus.com/comments.html?ref_noscript>comments</a></noscript>
+</section>
+<footer role=contentinfo>
+<div class=footer-content>
+<div class=footer-copyright-info>
+<a href=https://creativecommons.org/licenses/by/4.0/ title="Except where otherwise noted, content on this site is licensed under CC-BY-4.0">
+<i class="fab fa-creative-commons"></i>
+<i class="fab fa-creative-commons-by"></i>
+</a>
+2026 Dmytro Kostiuchenko
+</div>
+<div class=footer-social-buttons>
+<a href=https://github.com/koiuo title=GitHub><i class="fa fa-github"></i></a>
+<a href=https://ua.linkedin.com/in/dmytro-kostiuchenko-7b046b14 title=Linkedin><i class="fa fa-linkedin-square"></i></a>
+</div>
+</div>
+</footer>
+</div>
+</body>
+</html>
